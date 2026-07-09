@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ai-governance-toolkit
+    runtime: python
+    buildCommand: pip install -e .
+    startCommand: uvicorn governance_toolkit.registry.api:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GOVERNANCE_DB_URL
+        value: sqlite:////data/governance.db
+    disk:
+      name: governance-data
+      mountPath: /data
+      sizeGB: 1
