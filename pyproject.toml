@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-governance-toolkit"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.95,<0.100",
+    "uvicorn[standard]>=0.24",
+    "sqlalchemy>=1.4,<2.0",
+    "click>=8.0",
+    "pydantic>=1.10,<2.0",
+    "rich>=13.0",
+    "httpx>=0.25",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "httpx>=0.25",
+]
+
+[project.scripts]
+governance = "governance_toolkit.cli:cli"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["governance_toolkit*"]

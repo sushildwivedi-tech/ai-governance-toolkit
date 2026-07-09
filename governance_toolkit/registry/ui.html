@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Agent Governance Toolkit</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d2e;
+    --surface2: #232640;
+    --border: #2e3156;
+    --accent: #6c63ff;
+    --accent2: #a78bfa;
+    --green: #22c55e;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* Layout */
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; gap: 12px; height: 56px; }
+  header h1 { font-size: 16px; font-weight: 600; letter-spacing: -.3px; }
+  header .badge { background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; letter-spacing: .5px; }
+  main { max-width: 1280px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+
+  /* Cards */
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 8px; }
+  .card .value { font-size: 32px; font-weight: 700; line-height: 1; }
+  .card .sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .card.green .value { color: var(--green); }
+  .card.yellow .value { color: var(--yellow); }
+  .card.red .value { color: var(--red); }
+  .card.purple .value { color: var(--accent2); }
+
+  /* Scan panel */
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .panel h2 { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--accent2); }
+  .scan-row { display: flex; gap: 10px; align-items: center; }
+  .scan-row input[type=text] {
+    flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 9px 14px; border-radius: 8px; font-size: 14px; outline: none;
+    transition: border-color .15s;
+  }
+  .scan-row input[type=text]:focus { border-color: var(--accent); }
+  .scan-row label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; white-space: nowrap; cursor: pointer; }
+  .scan-row label input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; }
+  button {
+    background: var(--accent); color: #fff; border: none; padding: 9px 20px;
+    border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: opacity .15s, transform .1s;
+  }
+  button:hover { opacity: .88; }
+  button:active { transform: scale(.97); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
+
+  /* Toast */
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 13px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 999; max-width: 360px; }
+  #toast.show { opacity: 1; }
+  #toast.ok { border-color: var(--green); }
+  #toast.err { border-color: var(--red); }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody td { padding: 11px 12px; vertical-align: middle; }
+  tbody tr:last-child { border-bottom: none; }
+
+  /* Score pill */
+  .score { display: inline-block; font-weight: 700; font-size: 13px; padding: 3px 10px; border-radius: 20px; min-width: 58px; text-align: center; }
+  .score.green { background: rgba(34,197,94,.15); color: var(--green); }
+  .score.yellow { background: rgba(245,158,11,.15); color: var(--yellow); }
+  .score.red { background: rgba(239,68,68,.15); color: var(--red); }
+
+  /* Framework tag */
+  .fw-tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: var(--surface2); border: 1px solid var(--border); color: var(--accent2); letter-spacing: .3px; }
+  .fw-tag.anthropic { background: rgba(108,99,255,.15); border-color: var(--accent); color: var(--accent2); }
+  .fw-tag.langchain { background: rgba(34,197,94,.10); border-color: var(--green); color: var(--green); }
+  .fw-tag.langgraph { background: rgba(34,197,94,.10); border-color: #16a34a; color: #4ade80; }
+  .fw-tag.crewai { background: rgba(245,158,11,.10); border-color: var(--yellow); color: var(--yellow); }
+  .fw-tag.autogpt { background: rgba(239,68,68,.10); border-color: var(--red); color: var(--red); }
+
+  /* Action buttons */
+  .action-btn { background: none; border: 1px solid var(--border); color: var(--muted); padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: border-color .15s, color .15s; }
+  .action-btn:hover { border-color: var(--accent); color: var(--accent2); }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 48px 0; color: var(--muted); }
+  .empty .icon { font-size: 36px; margin-bottom: 12px; }
+  .empty p { font-size: 14px; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 24px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 620px; max-height: 90vh; overflow-y: auto; padding: 28px; }
+  .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .modal-title { font-size: 16px; font-weight: 700; }
+  .modal-close { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .modal-close:hover { color: var(--text); }
+
+  /* Score dial */
+  .score-dial { text-align: center; margin-bottom: 20px; }
+  .score-dial .big { font-size: 56px; font-weight: 800; line-height: 1; }
+  .score-dial .of { font-size: 18px; color: var(--muted); }
+  .score-dial .summary { font-size: 13px; color: var(--muted); margin-top: 8px; max-width: 400px; margin-left: auto; margin-right: auto; }
+
+  /* Criteria list */
+  .criteria { display: flex; flex-direction: column; gap: 10px; }
+  .criterion { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+  .criterion.pass { border-color: rgba(34,197,94,.3); }
+  .criterion.fail { border-color: rgba(239,68,68,.25); }
+  .criterion-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .criterion-label { font-weight: 600; font-size: 13px; }
+  .criterion-pts { font-size: 12px; font-weight: 700; }
+  .criterion.pass .criterion-pts { color: var(--green); }
+  .criterion.fail .criterion-pts { color: var(--red); }
+  .criterion-desc { font-size: 12px; color: var(--muted); }
+  .criterion-fix { font-size: 12px; color: var(--yellow); margin-top: 6px; display: flex; gap: 6px; }
+  .criterion-fix::before { content: '→'; flex-shrink: 0; }
+
+  /* Scan results inline */
+  .scan-results { margin-top: 16px; }
+  .scan-results table tbody td { font-size: 12px; }
+
+  /* Spinner */
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Delete confirm */
+  .del-confirm { font-size: 12px; color: var(--red); }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .tab { padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
+
+  /* Truncate */
+  .trunc { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  @media (max-width: 900px) {
+    .cards { grid-template-columns: repeat(2, 1fr); }
+    .scan-row { flex-wrap: wrap; }
+  }
+  @media (max-width: 600px) {
+    .cards { grid-template-columns: 1fr 1fr; }
+    main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+  <h1>AI Agent Governance Toolkit</h1>
+  <span class="badge">OWASP LLM 2026</span>
+  <span style="flex:1"></span>
+  <a href="/docs" target="_blank" style="color:var(--muted);font-size:12px;text-decoration:none;">API docs →</a>
+</header>
+
+<main>
+
+  <!-- Summary cards -->
+  <div class="cards" id="cards">
+    <div class="card purple"><div class="label">Total Agents</div><div class="value" id="c-total">—</div><div class="sub">registered in registry</div></div>
+    <div class="card" id="card-avg"><div class="label">Avg Governance Score</div><div class="value" id="c-avg">—</div><div class="sub">out of 100</div></div>
+    <div class="card red"><div class="label">Below 50</div><div class="value" id="c-below">—</div><div class="sub">governance-absent agents</div></div>
+    <div class="card"><div class="label">Frameworks</div><div class="value" id="c-fw">—</div><div class="sub" id="c-fw-list" style="font-size:11px;line-height:1.6">—</div></div>
+  </div>
+
+  <!-- Scan panel -->
+  <div class="panel">
+    <h2>Scan Codebase</h2>
+    <div class="scan-row">
+      <input type="text" id="scan-path" placeholder="/path/to/your/project" value="" />
+      <label><input type="checkbox" id="scan-register" checked /> Auto-register</label>
+      <button id="scan-btn" onclick="runScan()">Scan</button>
+    </div>
+    <div id="scan-output" class="scan-results" style="display:none"></div>
+  </div>
+
+  <!-- Registry table -->
+  <div class="panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h2 style="margin:0">Agent Registry</h2>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="text" id="filter-input" placeholder="Filter by name, owner, framework…" style="width:240px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;outline:none;" oninput="filterAgents()" />
+        <button class="btn-secondary" onclick="loadAgents()" style="padding:7px 14px;font-size:12px;">↻ Refresh</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Agent</th>
+            <th>Framework</th>
+            <th>Model</th>
+            <th>Owner</th>
+            <th>Score</th>
+            <th>Last Seen</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="agents-tbody">
+          <tr><td colspan="7"><div class="empty"><div class="icon">🔍</div><p>No agents yet. Run a scan above.</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- Score modal -->
+<div class="modal-overlay" id="score-modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-agent-name">—</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px;" id="modal-agent-id">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="score-dial">
+      <div class="big" id="modal-score">—</div>
+      <div class="of">/ 100</div>
+      <div class="summary" id="modal-risk-summary">—</div>
+    </div>
+    <div class="criteria" id="modal-criteria"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+let allAgents = [];
+
+const FW_LABELS = {
+  anthropic_claude: 'Claude SDK',
+  langchain: 'LangChain',
+  langgraph: 'LangGraph',
+  crewai: 'CrewAI',
+  autogpt: 'AutoGPT',
+  unknown: 'Unknown',
+};
+
+function scoreColor(s) {
+  if (s >= 80) return 'green';
+  if (s >= 40) return 'yellow';
+  return 'red';
+}
+
+function fwClass(fw) {
+  return fw.replace('_', '');
+}
+
+function fmt(dt) {
+  if (!dt) return '—';
+  return new Date(dt).toLocaleString(undefined, {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.className = '', 3000);
+}
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, { headers: {'Content-Type': 'application/json'}, ...opts });
+  if (!r.ok) {
+    const body = await r.json().catch(() => ({}));
+    throw new Error(body.detail || `HTTP ${r.status}`);
+  }
+  return r.status === 204 ? null : r.json();
+}
+
+async function loadSummary() {
+  try {
+    const s = await api('/api/v1/summary');
+    document.getElementById('c-total').textContent = s.total;
+    const avg = s.avg_score;
+    const avgEl = document.getElementById('c-avg');
+    const avgCard = document.getElementById('card-avg');
+    avgEl.textContent = avg.toFixed(1);
+    avgCard.className = 'card ' + scoreColor(avg);
+    document.getElementById('c-below').textContent = s.below_50;
+    document.getElementById('c-fw').textContent = Object.keys(s.by_framework).length;
+    const fwLines = Object.entries(s.by_framework).map(([k,v]) => `${FW_LABELS[k]||k}: ${v}`).join(' · ');
+    document.getElementById('c-fw-list').textContent = fwLines || '—';
+  } catch(e) { console.warn('summary error', e); }
+}
+
+async function loadAgents() {
+  try {
+    allAgents = await api('/api/v1/agents?limit=500');
+    renderTable(allAgents);
+    await loadSummary();
+  } catch(e) {
+    toast('Failed to load agents: ' + e.message, 'err');
+  }
+}
+
+function filterAgents() {
+  const q = document.getElementById('filter-input').value.toLowerCase();
+  if (!q) { renderTable(allAgents); return; }
+  renderTable(allAgents.filter(a =>
+    (a.name||'').toLowerCase().includes(q) ||
+    (a.owner||'').toLowerCase().includes(q) ||
+    (a.framework||'').toLowerCase().includes(q) ||
+    (a.model||'').toLowerCase().includes(q)
+  ));
+}
+
+function renderTable(agents) {
+  const tbody = document.getElementById('agents-tbody');
+  if (!agents.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="icon">🔍</div><p>No agents registered yet. Run a scan above.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = agents.map(a => {
+    const sc = a.governance_score || 0;
+    const col = scoreColor(sc);
+    const fw = a.framework || 'unknown';
+    return `<tr>
+      <td>
+        <div style="font-weight:600">${esc(a.name)}</div>
+        <div style="font-size:11px;color:var(--muted);font-family:monospace">${(a.agent_id||'').slice(0,12)}</div>
+        ${a.file_path ? `<div class="trunc" style="font-size:11px;color:var(--muted)" title="${esc(a.file_path)}">${esc(a.file_path)}</div>` : ''}
+      </td>
+      <td><span class="fw-tag ${fwClass(fw)}">${FW_LABELS[fw]||fw}</span></td>
+      <td style="color:var(--muted);font-size:12px">${esc(a.model||'—')}</td>
+      <td style="font-size:12px">${esc(a.owner||'—')}</td>
+      <td><span class="score ${col}">${sc.toFixed(0)}/100</span></td>
+      <td style="color:var(--muted);font-size:12px;white-space:nowrap">${fmt(a.last_seen)}</td>
+      <td style="display:flex;gap:6px;justify-content:flex-end">
+        <button class="action-btn" onclick="showScore('${a.agent_id}')">Score</button>
+        <button class="action-btn" style="border-color:rgba(239,68,68,.3);color:var(--red)" onclick="deleteAgent('${a.agent_id}', this)">Unregister</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function showScore(agentId) {
+  try {
+    const report = await api(`/api/v1/agents/${agentId}/score`);
+    document.getElementById('modal-agent-name').textContent = report.agent_name;
+    document.getElementById('modal-agent-id').textContent = report.agent_id;
+    const sc = report.total_score;
+    const col = scoreColor(sc);
+    const scoreEl = document.getElementById('modal-score');
+    scoreEl.textContent = sc.toFixed(0);
+    scoreEl.style.color = `var(--${col})`;
+    document.getElementById('modal-risk-summary').textContent = report.risk_summary;
+
+    const crit = document.getElementById('modal-criteria');
+    crit.innerHTML = report.criteria.map(c => `
+      <div class="criterion ${c.passed ? 'pass' : 'fail'}">
+        <div class="criterion-header">
+          <span class="criterion-label">${c.passed ? '✓' : '✗'} ${esc(c.label)}</span>
+          <span class="criterion-pts">${c.points_earned}/${c.points_possible} pts</span>
+        </div>
+        <div class="criterion-desc">${esc(c.description)}</div>
+        ${c.remediation ? `<div class="criterion-fix">${esc(c.remediation)}</div>` : ''}
+      </div>
+    `).join('');
+
+    document.getElementById('score-modal').classList.add('open');
+  } catch(e) {
+    toast('Failed to load score: ' + e.message, 'err');
+  }
+}
+
+function closeModal(e) {
+  if (!e || e.target.id === 'score-modal' || e.target.classList.contains('modal-close')) {
+    document.getElementById('score-modal').classList.remove('open');
+  }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+async function deleteAgent(agentId, btn) {
+  if (!btn.dataset.confirm) {
+    btn.textContent = 'Sure?';
+    btn.dataset.confirm = '1';
+    setTimeout(() => { btn.textContent = 'Unregister'; delete btn.dataset.confirm; }, 3000);
+    return;
+  }
+  try {
+    await api(`/api/v1/agents/${agentId}`, { method: 'DELETE' });
+    toast('Agent unregistered', 'ok');
+    loadAgents();
+  } catch(e) {
+    toast('Unregister failed: ' + e.message, 'err');
+  }
+}
+
+async function runScan() {
+  const path = document.getElementById('scan-path').value.trim();
+  if (!path) { toast('Enter a directory path', 'err'); return; }
+  const register = document.getElementById('scan-register').checked;
+  const btn = document.getElementById('scan-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  const out = document.getElementById('scan-output');
+  out.style.display = 'none';
+
+  try {
+    const result = await api('/api/v1/scan', {
+      method: 'POST',
+      body: JSON.stringify({ path, auto_register: register }),
+    });
+
+    let html = `<div style="margin-bottom:12px;font-size:13px;color:var(--muted)">
+      Found <strong style="color:var(--text)">${result.scanned}</strong> agent(s)`;
+    if (register) html += ` · Registered <strong style="color:var(--green)">${result.registered}</strong> · Updated <strong style="color:var(--accent2)">${result.updated}</strong>`;
+    html += '</div>';
+
+    if (result.agents.length > 0) {
+      html += `<div class="table-wrap"><table>
+        <thead><tr><th>File</th><th>Framework</th><th>Agent Name</th><th>Model</th><th>Tools</th><th>Owner</th></tr></thead>
+        <tbody>`;
+      html += result.agents.map(a => {
+        const fw = a.framework || 'unknown';
+        const tools = (a.tools||[]).slice(0,3).join(', ') + ((a.tools||[]).length > 3 ? '…' : '');
+        return `<tr>
+          <td style="font-family:monospace;color:var(--muted)">${esc((a.file_path||'').split('/').pop())}</td>
+          <td><span class="fw-tag ${fwClass(fw)}">${FW_LABELS[fw]||fw}</span></td>
+          <td style="font-weight:600">${esc(a.name)}</td>
+          <td style="color:var(--muted)">${esc(a.model||'—')}</td>
+          <td style="color:var(--muted)">${esc(tools||'—')}</td>
+          <td style="color:var(--muted)">${esc(a.owner||'—')}</td>
+        </tr>`;
+      }).join('');
+      html += '</tbody></table></div>';
+    } else {
+      html += `<div class="empty"><div class="icon">🔍</div><p>No AI agents found in that directory.</p></div>`;
+    }
+
+    out.innerHTML = html;
+    out.style.display = 'block';
+    toast(`Scan complete — ${result.scanned} agent(s) found`, 'ok');
+    if (register) loadAgents();
+  } catch(e) {
+    out.innerHTML = `<div style="color:var(--red);font-size:13px;padding:12px 0">Error: ${esc(e.message)}</div>`;
+    out.style.display = 'block';
+    toast('Scan failed: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Scan';
+  }
+}
+
+// Prepopulate scan path with a useful default
+window.addEventListener('DOMContentLoaded', () => {
+  loadAgents();
+});
+</script>
+</body>
+</html>
