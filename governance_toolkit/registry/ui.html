@@ -140,10 +140,47 @@
   .del-confirm { font-size: 12px; color: var(--red); }
 
   /* Tabs */
-  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); }
   .tab { padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; }
   .tab:hover { color: var(--text); }
   .tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
+  .tab .tab-sub { font-weight: 400; color: var(--muted); }
+  .tab-section { display: flex; flex-direction: column; gap: 24px; }
+  .tab-section.hidden { display: none; }
+
+  /* Design gate (Pre-Build tab) */
+  .dg-wrap { max-width: 920px; margin: 0 auto; width: 100%; }
+  .dg-kicker { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent2); font-weight: 700; }
+  .dg-title { font-size: 24px; margin: 6px 0; line-height: 1.2; }
+  .dg-sub { color: var(--muted); max-width: 640px; font-size: 14px; line-height: 1.5; }
+  .dg-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 20px; }
+  .dg-q { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+  .dg-q h3 { margin: 0 0 4px; font-size: 14px; line-height: 1.4; }
+  .dg-q .dg-hint { margin: 0 0 12px; color: var(--muted); font-size: 12.5px; }
+  .dg-opts { display: grid; gap: 8px; }
+  .dg-opt { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; background: var(--surface2); transition: border-color .15s, background .15s; font-size: 13px; line-height: 1.45; }
+  .dg-opt:hover { border-color: var(--accent); }
+  .dg-opt input { margin-top: 3px; accent-color: var(--accent); }
+  .dg-opt.sel { border-color: var(--accent); background: rgba(108,99,255,.12); }
+  .dg-opt .dg-lbl { font-weight: 600; }
+  .dg-opt .dg-desc { color: var(--muted); font-size: 12px; display: block; margin-top: 2px; }
+  .dg-weight { margin-left: auto; font-size: 11px; color: var(--muted); white-space: nowrap; padding-left: 8px; }
+  .dg-sticky { position: sticky; bottom: 0; margin-top: 22px; }
+  .dg-result { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; }
+  .dg-tierrow { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .dg-score { font-size: 38px; font-weight: 800; line-height: 1; }
+  .dg-tierbadge { padding: 6px 14px; border-radius: 999px; font-weight: 700; font-size: 13px; background: var(--surface2); color: var(--muted); }
+  .dg-tiernote { color: var(--muted); font-size: 13px; }
+  .dg-bar { height: 10px; background: var(--surface2); border-radius: 999px; overflow: hidden; margin: 16px 0 4px; border: 1px solid var(--border); }
+  .dg-fill { height: 100%; width: 0; transition: width .4s, background .4s; border-radius: 999px; background: var(--accent); }
+  .dg-maplabels { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; }
+  .dg-controls { margin-top: 18px; display: none; }
+  .dg-controls h4 { margin: 0 0 8px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .dg-controls ul { margin: 0; padding-left: 18px; }
+  .dg-controls li { margin: 5px 0; font-size: 13px; line-height: 1.5; }
+  .dg-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  .dg-foot { margin-top: 20px; color: var(--muted); font-size: 12px; line-height: 1.6; border-top: 1px solid var(--border); padding-top: 14px; }
+  @media (min-width: 900px) { .dg-grid { grid-template-columns: 1fr 1fr; } }
 
   /* Truncate */
   .trunc { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -165,11 +202,54 @@
   <h1>AI Agent Governance Toolkit</h1>
   <span class="badge">OWASP LLM 2026</span>
   <span style="flex:1"></span>
-  <a href="/design-gate" style="color:var(--muted);font-size:12px;text-decoration:none;margin-right:16px;">Design Gate →</a>
   <a href="/docs" target="_blank" style="color:var(--muted);font-size:12px;text-decoration:none;">API docs →</a>
 </header>
 
 <main>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab" id="tab-btn-pre" onclick="switchTab('pre')">Pre-Build <span class="tab-sub">· Design Gate</span></div>
+    <div class="tab" id="tab-btn-post" onclick="switchTab('post')">Post-Build <span class="tab-sub">· Scan &amp; Registry</span></div>
+  </div>
+
+  <!-- Pre-Build tab: Design Gate -->
+  <section class="tab-section hidden" id="tab-pre">
+    <div class="dg-wrap">
+      <div class="dg-kicker">Shift-Left AI Governance</div>
+      <h2 class="dg-title">Agent Design Gate</h2>
+      <p class="dg-sub">Score an AI agent's risk <strong>before you build it</strong> &mdash; at design time, not after deployment. Answer six questions about what the agent will be allowed to do, and get a risk tier plus the controls to design in from day one.</p>
+
+      <div class="dg-grid" id="dg-grid"></div>
+
+      <div class="dg-sticky">
+        <div class="dg-result">
+          <div class="dg-tierrow">
+            <div class="dg-score" id="dg-scoreNum">&mdash;</div>
+            <div class="dg-tierbadge" id="dg-tierBadge">Answer the questions</div>
+            <div class="dg-tiernote" id="dg-tierNote"></div>
+          </div>
+          <div class="dg-bar"><div class="dg-fill" id="dg-fill"></div></div>
+          <div class="dg-maplabels"><span>Supervised</span><span>Semi-autonomous</span><span>Fully autonomous</span></div>
+          <div class="dg-controls" id="dg-controls">
+            <h4>Design-time controls to build in</h4>
+            <ul id="dg-ctrlList"></ul>
+          </div>
+          <div class="dg-actions">
+            <button id="dg-copyBtn">Copy result summary</button>
+            <button class="btn-secondary" id="dg-resetBtn">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dg-foot">
+        Tiers and controls adapted from OWASP GenAI Security Project, <em>State of Agentic AI Security and Governance</em> v2.01 (June 2026), Autonomy Level dimension. Use this at design kickoff, not after go-live &mdash; that's the whole point of shifting governance left.
+      </div>
+    </div>
+  </section>
+
+  <!-- Post-Build tab: Scan & Registry -->
+  <section class="tab-section hidden" id="tab-post">
 
   <!-- Summary cards -->
   <div class="cards" id="cards">
@@ -218,6 +298,8 @@
       </table>
     </div>
   </div>
+
+  </section>
 
 </main>
 
@@ -468,8 +550,196 @@ async function runScan() {
   }
 }
 
-// Prepopulate scan path with a useful default
+/* ---------- Tabs ---------- */
+
+function switchTab(name) {
+  document.getElementById('tab-pre').classList.toggle('hidden', name !== 'pre');
+  document.getElementById('tab-post').classList.toggle('hidden', name !== 'post');
+  document.getElementById('tab-btn-pre').classList.toggle('active', name === 'pre');
+  document.getElementById('tab-btn-post').classList.toggle('active', name === 'post');
+  history.replaceState(null, '', name === 'post' ? '#post-build' : '#pre-build');
+}
+
+/* ---------- Design Gate (Pre-Build) ---------- */
+
+const DG_QUESTIONS = [
+  {
+    id:"autonomy",
+    title:"1. How much can the agent do without a human confirming the action?",
+    hint:"OWASP's core question. This drives the whole risk profile.",
+    opts:[
+      {lbl:"Supervised", desc:"Agent suggests; a human executes every action.", w:0},
+      {lbl:"Semi-autonomous", desc:"Agent executes routine actions; humans review flagged items.", w:2},
+      {lbl:"Fully autonomous", desc:"Agent plans, executes and iterates with no human in the loop.", w:4}
+    ]
+  },
+  {
+    id:"tools",
+    title:"2. What can it touch? (tools, APIs, systems)",
+    hint:"Breadth of tool access widens the blast radius.",
+    opts:[
+      {lbl:"Read-only / sandboxed", desc:"Fetch, summarise, draft. No write access.", w:0},
+      {lbl:"Scoped write to a few systems", desc:"A defined allow-list of tools or APIs.", w:2},
+      {lbl:"Broad / open-ended tool access", desc:"Can call many systems, shell, or invoke other agents.", w:4}
+    ]
+  },
+  {
+    id:"data",
+    title:"3. What data will it see or move?",
+    hint:"Sensitivity of the data it can reach.",
+    opts:[
+      {lbl:"Public / non-sensitive", desc:"Nothing regulated or confidential.", w:0},
+      {lbl:"Internal / confidential", desc:"Business data, internal docs, customer records.", w:2},
+      {lbl:"Regulated / secrets", desc:"PII, PHI, financial, credentials, or crown-jewel data.", w:4}
+    ]
+  },
+  {
+    id:"reversibility",
+    title:"4. How reversible are its actions?",
+    hint:"Can a bad action be undone, or is it permanent / external?",
+    opts:[
+      {lbl:"Fully reversible", desc:"Drafts, staged changes, easily rolled back.", w:0},
+      {lbl:"Reversible with effort", desc:"Recoverable but costly — e.g. bulk edits.", w:2},
+      {lbl:"Irreversible / external", desc:"Spends money, sends comms, deletes data, moves prod.", w:4}
+    ]
+  },
+  {
+    id:"memory",
+    title:"5. Does it have persistent memory or long-running state?",
+    hint:"Persistence lets small errors compound over time.",
+    opts:[
+      {lbl:"Stateless", desc:"Each run is fresh; no memory carried over.", w:0},
+      {lbl:"Session memory", desc:"Remembers within a task or session only.", w:1},
+      {lbl:"Persistent / cross-session", desc:"Long-lived memory that shapes future actions.", w:3}
+    ]
+  },
+  {
+    id:"oversight",
+    title:"6. What oversight will actually exist at runtime?",
+    hint:"Be honest about what's really monitored, not what's aspirational.",
+    opts:[
+      {lbl:"Logged + monitored + kill-switch", desc:"Behavioural monitoring and a way to stop it fast.", w:0},
+      {lbl:"Logged only", desc:"Audit trail exists but no active monitoring.", w:2},
+      {lbl:"Little to none", desc:"No reliable logging, monitoring, or stop mechanism.", w:4}
+    ]
+  }
+];
+
+const DG_MAXW = DG_QUESTIONS.reduce((s,q)=>s+Math.max(...q.opts.map(o=>o.w)),0);
+const dgAnswers = {};
+
+const DG_TIERS = [
+  {name:"Supervised", min:0, max:6, color:"var(--green)", bg:"rgba(34,197,94,.15)",
+    note:"Standard application-security controls apply.",
+    controls:[
+      "Treat like any application feature: input validation, authn/authz, logging.",
+      "Register the agent in your inventory with owner, purpose and data scope at design time.",
+      "Document the intended tool list and data access in the design spec before build."
+    ]},
+  {name:"Semi-autonomous", min:7, max:13, color:"var(--yellow)", bg:"rgba(245,158,11,.15)",
+    note:"Risk-tiered review required; monitoring must catch what humans don't review.",
+    controls:[
+      "Define which actions run automatically vs. which get flagged for human review — write it into the spec now.",
+      "Design monitoring for the actions no human will look at, before launch.",
+      "Give the agent a scoped, least-privilege tool allow-list; no open-ended access.",
+      "Set escalation thresholds and who receives them.",
+      "Add eval/guardrail gates (e.g. prompt-injection tests) into CI before deploy."
+    ]},
+  {name:"Fully autonomous", min:14, max:99, color:"var(--red)", bg:"rgba(239,68,68,.15)",
+    note:"Requires deterministic enforcement, continuous monitoring, and a kill-switch.",
+    controls:[
+      "Deterministic enforcement: hooks / circuit breakers that block high-risk actions regardless of model output.",
+      "A kill-switch and continuous behavioural monitoring — designed in, not bolted on.",
+      "Budget limits on execution time, API calls and compute to contain runaway loops.",
+      "Treat the agent as a high-risk principal: dedicated identity, explicit permission boundaries, own audit trail.",
+      "Mandatory design-stage red-team / pre-mortem for prompt injection, tool misuse and agent-to-agent cascades.",
+      "Sign-off from a named risk owner before any build work starts."
+    ]}
+];
+
+function dgRender(){
+  const grid = document.getElementById("dg-grid");
+  grid.innerHTML = "";
+  DG_QUESTIONS.forEach(q=>{
+    const card = document.createElement("div");
+    card.className="dg-q";
+    card.innerHTML = `<h3>${q.title}</h3><p class="dg-hint">${q.hint}</p>`;
+    const opts = document.createElement("div");
+    opts.className="dg-opts";
+    q.opts.forEach((o,i)=>{
+      const id = `dg_${q.id}_${i}`;
+      const label = document.createElement("label");
+      label.className="dg-opt";
+      label.setAttribute("for",id);
+      label.innerHTML = `<input type="radio" name="dg_${q.id}" id="${id}" value="${o.w}">
+        <span><span class="dg-lbl">${o.lbl}</span><span class="dg-desc">${o.desc}</span></span>
+        <span class="dg-weight">+${o.w}</span>`;
+      label.querySelector("input").addEventListener("change",()=>{
+        dgAnswers[q.id]=o.w;
+        opts.querySelectorAll(".dg-opt").forEach(e=>e.classList.remove("sel"));
+        label.classList.add("sel");
+        dgUpdate();
+      });
+      opts.appendChild(label);
+    });
+    card.appendChild(opts);
+    grid.appendChild(card);
+  });
+}
+
+function dgUpdate(){
+  const answered = Object.keys(dgAnswers).length;
+  const score = Object.values(dgAnswers).reduce((s,v)=>s+v,0);
+  const pct = Math.round((score/DG_MAXW)*100);
+  document.getElementById("dg-fill").style.width = pct+"%";
+  const tb = document.getElementById("dg-tierBadge");
+  if(answered < DG_QUESTIONS.length){
+    document.getElementById("dg-scoreNum").textContent = score;
+    tb.textContent = `${answered}/${DG_QUESTIONS.length} answered`;
+    tb.style.background="var(--surface2)"; tb.style.color="var(--muted)";
+    document.getElementById("dg-tierNote").textContent="";
+    document.getElementById("dg-controls").style.display="none";
+    document.getElementById("dg-fill").style.background="var(--accent)";
+    return;
+  }
+  const tier = DG_TIERS.find(t=>score>=t.min && score<=t.max);
+  document.getElementById("dg-scoreNum").textContent = score;
+  tb.textContent = tier.name;
+  tb.style.background = tier.bg; tb.style.color = tier.color;
+  document.getElementById("dg-tierNote").textContent = `Score ${score} of ${DG_MAXW}`;
+  document.getElementById("dg-fill").style.background = tier.color;
+  const cl = document.getElementById("dg-ctrlList");
+  cl.innerHTML="";
+  const note = document.createElement("li");
+  note.style.color = tier.color; note.style.fontWeight="600"; note.style.listStyle="none";
+  note.style.marginLeft="-18px"; note.textContent = tier.note;
+  cl.appendChild(note);
+  tier.controls.forEach(c=>{const li=document.createElement("li");li.textContent=c;cl.appendChild(li);});
+  document.getElementById("dg-controls").style.display="block";
+}
+
+document.getElementById("dg-copyBtn").addEventListener("click",()=>{
+  if(Object.keys(dgAnswers).length<DG_QUESTIONS.length){toast("Answer all six questions first.","err");return;}
+  const score = Object.values(dgAnswers).reduce((s,v)=>s+v,0);
+  const tier = DG_TIERS.find(t=>score>=t.min && score<=t.max);
+  let txt = `Shift-Left Agent Design Gate\nRisk score: ${score}/${DG_MAXW} — Tier: ${tier.name}\n${tier.note}\n\nDesign-time controls:\n`;
+  tier.controls.forEach(c=>txt+=`- ${c}\n`);
+  txt += `\n(Adapted from OWASP State of Agentic AI Security & Governance v2.01)`;
+  navigator.clipboard.writeText(txt).then(()=>{
+    toast("Result summary copied to clipboard","ok");
+  }).catch(()=>toast("Copy failed — clipboard unavailable","err"));
+});
+document.getElementById("dg-resetBtn").addEventListener("click",()=>{
+  for(const k in dgAnswers)delete dgAnswers[k];
+  dgRender();dgUpdate();
+});
+
+/* ---------- Init ---------- */
+
 window.addEventListener('DOMContentLoaded', () => {
+  dgRender();
+  dgUpdate();
+  switchTab(location.hash === '#post-build' ? 'post' : 'pre');
   loadAgents();
 });
 </script>

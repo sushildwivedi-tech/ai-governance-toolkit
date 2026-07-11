@@ -7,7 +7,7 @@ from typing import List, Optional
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -234,7 +234,7 @@ def dashboard():
     return HTMLResponse(content=ui_path.read_text(encoding="utf-8"))
 
 
-@app.get("/design-gate", response_class=HTMLResponse)
+@app.get("/design-gate", include_in_schema=False)
 def design_gate():
-    gate_path = Path(__file__).parent / "design_gate.html"
-    return HTMLResponse(content=gate_path.read_text(encoding="utf-8"))
+    # The gate now lives on the dashboard's Pre-Build tab; keep old links working.
+    return RedirectResponse(url="/#pre-build")

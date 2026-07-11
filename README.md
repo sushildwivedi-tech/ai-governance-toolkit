@@ -51,15 +51,17 @@ governance score <agent-id>
 governance serve
 ```
 
-## Shift-Left Design Gate
-
-Run `governance serve` and open **http://127.0.0.1:8000/design-gate**
-
-A six-question risk gate for use at **design kickoff, before an agent is built** — the toolkit's scanner and registry catch agents after they exist, this catches the risk before they do. Answer questions about autonomy, tool access, data sensitivity, reversibility, memory, and runtime oversight; it scores the agent and returns a risk tier (Supervised / Semi-autonomous / Fully autonomous) with the design-time controls to build in from day one. Tiers are adapted from the OWASP GenAI Security Project's *State of Agentic AI Security and Governance* report.
-
 ## Web Dashboard
 
 Run `governance serve` and open **http://127.0.0.1:8000**
+
+The dashboard has two tabs, one for each side of the build:
+
+### Pre-Build — Design Gate
+
+A six-question risk gate for use at **design kickoff, before an agent is built** — the scanner and registry catch agents after they exist, this catches the risk before they do. Answer questions about autonomy, tool access, data sensitivity, reversibility, memory, and runtime oversight; it scores the agent and returns a risk tier (Supervised / Semi-autonomous / Fully autonomous) with the design-time controls to build in from day one. Tiers are adapted from the OWASP GenAI Security Project's *State of Agentic AI Security and Governance* report. (`/design-gate` redirects here.)
+
+### Post-Build — Scan & Registry
 
 ![Dashboard features: summary cards, scan panel, agent table, OWASP score modal]
 
