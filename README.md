@@ -14,6 +14,7 @@ Organizations deploying AI agents have no inventory of what's running — no own
 - **Agent Registry** — SQLite-backed store with a REST API for tracking every agent across your org
 - **OWASP Scorer** — rates each agent 0–100 against 5 governance criteria with actionable remediation hints
 - **Web Dashboard** — browser UI to scan, view, score, and unregister agents
+- **Shift-Left Design Gate** — a design-kickoff risk questionnaire that scores an agent *before* it's built, not after
 - **CLI** — `scan`, `list`, `score`, `register`, `serve`
 
 ## Supported Frameworks
@@ -49,6 +50,12 @@ governance score <agent-id>
 # Start the web dashboard at http://127.0.0.1:8000
 governance serve
 ```
+
+## Shift-Left Design Gate
+
+Run `governance serve` and open **http://127.0.0.1:8000/design-gate**
+
+A six-question risk gate for use at **design kickoff, before an agent is built** — the toolkit's scanner and registry catch agents after they exist, this catches the risk before they do. Answer questions about autonomy, tool access, data sensitivity, reversibility, memory, and runtime oversight; it scores the agent and returns a risk tier (Supervised / Semi-autonomous / Fully autonomous) with the design-time controls to build in from day one. Tiers are adapted from the OWASP GenAI Security Project's *State of Agentic AI Security and Governance* report.
 
 ## Web Dashboard
 

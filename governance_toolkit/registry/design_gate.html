@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shift-Left Agent Design Gate</title>
+<style>
+  :root{
+    --bg:#0f1216; --panel:#171b21; --panel2:#1e242c; --ink:#e8edf2; --muted:#9aa7b4;
+    --line:#2a323c; --accent:#4f8cff; --green:#2ecc71; --amber:#f5a623; --red:#ff5c5c;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;}
+  .wrap{max-width:920px;margin:0 auto;padding:28px 20px 80px;}
+  header{margin-bottom:22px}
+  .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  h1{font-size:28px;margin:6px 0 6px;line-height:1.2}
+  .sub{color:var(--muted);max-width:640px;font-size:15px}
+  .grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:22px}
+  .q{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+  .q h3{margin:0 0 4px;font-size:15px}
+  .q p.hint{margin:0 0 12px;color:var(--muted);font-size:13px}
+  .opts{display:grid;gap:8px}
+  .opt{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);
+    border-radius:10px;cursor:pointer;background:var(--panel2);transition:.15s;font-size:14px}
+  .opt:hover{border-color:var(--accent)}
+  .opt input{margin-top:3px;accent-color:var(--accent)}
+  .opt.sel{border-color:var(--accent);background:#20304d}
+  .opt .lbl{font-weight:600}
+  .opt .desc{color:var(--muted);font-size:12.5px;display:block;margin-top:2px}
+  .weightbadge{margin-left:auto;font-size:11px;color:var(--muted);white-space:nowrap;padding-left:8px}
+  .panel{position:sticky;bottom:0;margin-top:26px}
+  .result{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px}
+  .tierrow{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .score{font-size:40px;font-weight:800;line-height:1}
+  .tierbadge{padding:6px 14px;border-radius:999px;font-weight:700;font-size:14px}
+  .bar{height:10px;background:var(--panel2);border-radius:999px;overflow:hidden;margin:16px 0 4px;border:1px solid var(--line)}
+  .fill{height:100%;width:0;transition:.4s;border-radius:999px}
+  .maplabels{display:flex;justify-content:space-between;color:var(--muted);font-size:11px}
+  .controls{margin-top:18px}
+  .controls h4{margin:0 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .controls ul{margin:0;padding-left:18px}
+  .controls li{margin:5px 0;font-size:14px}
+  .actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  button{font:inherit;font-weight:600;font-size:14px;border-radius:10px;padding:10px 16px;cursor:pointer;border:1px solid var(--line)}
+  .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn-ghost{background:transparent;color:var(--ink)}
+  footer{margin-top:34px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:16px}
+  a{color:var(--accent)}
+  @media(min-width:720px){.grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">Shift-Left AI Governance</div>
+    <h1>Agent Design Gate</h1>
+    <p class="sub">Score an AI agent's risk <strong>before you build it</strong> &mdash; at design time, not after deployment. Answer six questions about what the agent will be allowed to do, and get a risk tier plus the controls to design in from day one.</p>
+    <p class="sub" style="margin-top:10px"><a href="/">&larr; Back to Agent Registry dashboard</a></p>
+  </header>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="panel">
+    <div class="result" id="result">
+      <div class="tierrow">
+        <div class="score" id="scoreNum">&mdash;</div>
+        <div class="tierbadge" id="tierBadge" style="background:#20304d;color:var(--muted)">Answer the questions</div>
+        <div style="color:var(--muted);font-size:13px" id="tierNote"></div>
+      </div>
+      <div class="bar"><div class="fill" id="fill"></div></div>
+      <div class="maplabels"><span>Supervised</span><span>Semi-autonomous</span><span>Fully autonomous</span></div>
+      <div class="controls" id="controls" style="display:none">
+        <h4>Design-time controls to build in</h4>
+        <ul id="ctrlList"></ul>
+      </div>
+      <div class="actions">
+        <button class="btn-primary" id="copyBtn">Copy result summary</button>
+        <button class="btn-ghost" id="resetBtn">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Tiers and controls adapted from OWASP GenAI Security Project, <em>State of Agentic AI Security and Governance</em> v2.01 (June 2026), Autonomy Level dimension. Use this at design kickoff, not after go-live &mdash; that's the whole point of shifting governance left.
+  </footer>
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    id:"autonomy",
+    title:"1. How much can the agent do without a human confirming the action?",
+    hint:"OWASP's core question. This drives the whole risk profile.",
+    opts:[
+      {lbl:"Supervised", desc:"Agent suggests; a human executes every action.", w:0},
+      {lbl:"Semi-autonomous", desc:"Agent executes routine actions; humans review flagged items.", w:2},
+      {lbl:"Fully autonomous", desc:"Agent plans, executes and iterates with no human in the loop.", w:4}
+    ]
+  },
+  {
+    id:"tools",
+    title:"2. What can it touch? (tools, APIs, systems)",
+    hint:"Breadth of tool access widens the blast radius.",
+    opts:[
+      {lbl:"Read-only / sandboxed", desc:"Fetch, summarise, draft. No write access.", w:0},
+      {lbl:"Scoped write to a few systems", desc:"A defined allow-list of tools or APIs.", w:2},
+      {lbl:"Broad / open-ended tool access", desc:"Can call many systems, shell, or invoke other agents.", w:4}
+    ]
+  },
+  {
+    id:"data",
+    title:"3. What data will it see or move?",
+    hint:"Sensitivity of the data it can reach.",
+    opts:[
+      {lbl:"Public / non-sensitive", desc:"Nothing regulated or confidential.", w:0},
+      {lbl:"Internal / confidential", desc:"Business data, internal docs, customer records.", w:2},
+      {lbl:"Regulated / secrets", desc:"PII, PHI, financial, credentials, or crown-jewel data.", w:4}
+    ]
+  },
+  {
+    id:"reversibility",
+    title:"4. How reversible are its actions?",
+    hint:"Can a bad action be undone, or is it permanent / external?",
+    opts:[
+      {lbl:"Fully reversible", desc:"Drafts, staged changes, easily rolled back.", w:0},
+      {lbl:"Reversible with effort", desc:"Recoverable but costly — e.g. bulk edits.", w:2},
+      {lbl:"Irreversible / external", desc:"Spends money, sends comms, deletes data, moves prod.", w:4}
+    ]
+  },
+  {
+    id:"memory",
+    title:"5. Does it have persistent memory or long-running state?",
+    hint:"Persistence lets small errors compound over time.",
+    opts:[
+      {lbl:"Stateless", desc:"Each run is fresh; no memory carried over.", w:0},
+      {lbl:"Session memory", desc:"Remembers within a task or session only.", w:1},
+      {lbl:"Persistent / cross-session", desc:"Long-lived memory that shapes future actions.", w:3}
+    ]
+  },
+  {
+    id:"oversight",
+    title:"6. What oversight will actually exist at runtime?",
+    hint:"Be honest about what's really monitored, not what's aspirational.",
+    opts:[
+      {lbl:"Logged + monitored + kill-switch", desc:"Behavioural monitoring and a way to stop it fast.", w:0},
+      {lbl:"Logged only", desc:"Audit trail exists but no active monitoring.", w:2},
+      {lbl:"Little to none", desc:"No reliable logging, monitoring, or stop mechanism.", w:4}
+    ]
+  }
+];
+
+// Max weight = 4+4+4+4+3+4 = 23
+const MAXW = QUESTIONS.reduce((s,q)=>s+Math.max(...q.opts.map(o=>o.w)),0);
+const answers = {};
+
+const TIERS = [
+  {name:"Supervised", min:0, max:6, color:"var(--green)", bg:"#123626",
+    note:"Standard application-security controls apply.",
+    controls:[
+      "Treat like any application feature: input validation, authn/authz, logging.",
+      "Register the agent in your inventory with owner, purpose and data scope at design time.",
+      "Document the intended tool list and data access in the design spec before build."
+    ]},
+  {name:"Semi-autonomous", min:7, max:13, color:"var(--amber)", bg:"#3a2c0c",
+    note:"Risk-tiered review required; monitoring must catch what humans don't review.",
+    controls:[
+      "Define which actions run automatically vs. which get flagged for human review — write it into the spec now.",
+      "Design monitoring for the actions no human will look at, before launch.",
+      "Give the agent a scoped, least-privilege tool allow-list; no open-ended access.",
+      "Set escalation thresholds and who receives them.",
+      "Add eval/guardrail gates (e.g. prompt-injection tests) into CI before deploy."
+    ]},
+  {name:"Fully autonomous", min:14, max:99, color:"var(--red)", bg:"#3a1414",
+    note:"Requires deterministic enforcement, continuous monitoring, and a kill-switch.",
+    controls:[
+      "Deterministic enforcement: hooks / circuit breakers that block high-risk actions regardless of model output.",
+      "A kill-switch and continuous behavioural monitoring — designed in, not bolted on.",
+      "Budget limits on execution time, API calls and compute to contain runaway loops.",
+      "Treat the agent as a high-risk principal: dedicated identity, explicit permission boundaries, own audit trail.",
+      "Mandatory design-stage red-team / pre-mortem for prompt injection, tool misuse and agent-to-agent cascades.",
+      "Sign-off from a named risk owner before any build work starts."
+    ]}
+];
+
+function render(){
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  QUESTIONS.forEach(q=>{
+    const card = document.createElement("div");
+    card.className="q";
+    card.innerHTML = `<h3>${q.title}</h3><p class="hint">${q.hint}</p>`;
+    const opts = document.createElement("div");
+    opts.className="opts";
+    q.opts.forEach((o,i)=>{
+      const id = `${q.id}_${i}`;
+      const label = document.createElement("label");
+      label.className="opt";
+      label.setAttribute("for",id);
+      label.innerHTML = `<input type="radio" name="${q.id}" id="${id}" value="${o.w}">
+        <span><span class="lbl">${o.lbl}</span><span class="desc">${o.desc}</span></span>
+        <span class="weightbadge">+${o.w}</span>`;
+      label.querySelector("input").addEventListener("change",()=>{
+        answers[q.id]=o.w;
+        opts.querySelectorAll(".opt").forEach(e=>e.classList.remove("sel"));
+        label.classList.add("sel");
+        update();
+      });
+      opts.appendChild(label);
+    });
+    card.appendChild(opts);
+    grid.appendChild(card);
+  });
+}
+
+function update(){
+  const answered = Object.keys(answers).length;
+  const score = Object.values(answers).reduce((s,v)=>s+v,0);
+  const pct = Math.round((score/MAXW)*100);
+  document.getElementById("fill").style.width = pct+"%";
+  if(answered < QUESTIONS.length){
+    document.getElementById("scoreNum").textContent = score;
+    const tb = document.getElementById("tierBadge");
+    tb.textContent = `${answered}/${QUESTIONS.length} answered`;
+    tb.style.background="#20304d"; tb.style.color="var(--muted)";
+    document.getElementById("tierNote").textContent="";
+    document.getElementById("controls").style.display="none";
+    document.getElementById("fill").style.background="var(--accent)";
+    return;
+  }
+  const tier = TIERS.find(t=>score>=t.min && score<=t.max);
+  document.getElementById("scoreNum").textContent = score;
+  const tb = document.getElementById("tierBadge");
+  tb.textContent = tier.name;
+  tb.style.background = tier.bg; tb.style.color = tier.color;
+  document.getElementById("tierNote").textContent = `Score ${score} of ${MAXW}`;
+  document.getElementById("fill").style.background = tier.color;
+  const cl = document.getElementById("ctrlList");
+  cl.innerHTML="";
+  const note = document.createElement("li");
+  note.style.color = tier.color; note.style.fontWeight="600"; note.style.listStyle="none";
+  note.style.marginLeft="-18px"; note.textContent = tier.note;
+  cl.appendChild(note);
+  tier.controls.forEach(c=>{const li=document.createElement("li");li.textContent=c;cl.appendChild(li);});
+  document.getElementById("controls").style.display="block";
+}
+
+document.getElementById("copyBtn").addEventListener("click",()=>{
+  const score = Object.values(answers).reduce((s,v)=>s+v,0);
+  if(Object.keys(answers).length<QUESTIONS.length){alert("Answer all six questions first.");return;}
+  const tier = TIERS.find(t=>score>=t.min && score<=t.max);
+  let txt = `Shift-Left Agent Design Gate\nRisk score: ${score}/${MAXW} — Tier: ${tier.name}\n${tier.note}\n\nDesign-time controls:\n`;
+  tier.controls.forEach(c=>txt+=`- ${c}\n`);
+  txt += `\n(Adapted from OWASP State of Agentic AI Security & Governance v2.01)`;
+  navigator.clipboard.writeText(txt).then(()=>{
+    const b=document.getElementById("copyBtn");const o=b.textContent;b.textContent="Copied ✓";setTimeout(()=>b.textContent=o,1500);
+  });
+});
+document.getElementById("resetBtn").addEventListener("click",()=>{
+  for(const k in answers)delete answers[k];
+  render();update();
+});
+
+render();update();
+</script>
+</body>
+</html>

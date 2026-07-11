@@ -232,3 +232,9 @@ def scan_path(body: ScanRequest, db: Session = Depends(get_db)):
 def dashboard():
     ui_path = Path(__file__).parent / "ui.html"
     return HTMLResponse(content=ui_path.read_text(encoding="utf-8"))
+
+
+@app.get("/design-gate", response_class=HTMLResponse)
+def design_gate():
+    gate_path = Path(__file__).parent / "design_gate.html"
+    return HTMLResponse(content=gate_path.read_text(encoding="utf-8"))
