@@ -29,7 +29,7 @@ TRACE_CHECKS = [
 
 
 def _has_owner(agent) -> bool:
-    return bool(getattr(agent, "owner_name", None) and str(agent.owner_name).strip())
+    return bool(getattr(agent, "owner", None) and str(agent.owner).strip())
 
 
 def _has_identity(agent) -> bool:

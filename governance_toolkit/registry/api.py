@@ -15,20 +15,17 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from .db import get_db, init_db
-from .models import AgentRecord, RegisteredAgent
+from .models import AgentRecord
 from .schemas import (
     AgentCreate,
     AgentResponse,
     AgentUpdate,
     BatchResult,
     GovernanceReport,
-    RegisteredAgentCreate,
-    RegisteredAgentResponse,
-    RegisteredAgentUpdate,
     RegisterSummary,
 )
 from ..scorer.owasp import calculate_score, generate_report
-from ..scorer.traceability import traceability_status, traceability_gaps, trace_checks
+from ..scorer.traceability import traceability_status, trace_checks
 
 app = FastAPI(
     title="AI Governance Registry",
@@ -104,6 +101,10 @@ def list_agents(
     framework: Optional[str] = None,
     min_score: Optional[float] = None,
     owner: Optional[str] = None,
+    environment: Optional[str] = None,
+    risk_tier: Optional[str] = None,
+    status: Optional[str] = None,
+    traceability: Optional[str] = None,
     limit: int = 100,
     offset: int = 0,
     db: Session = Depends(get_db),
@@ -115,7 +116,17 @@ def list_agents(
         q = q.filter(AgentRecord.governance_score >= min_score)
     if owner:
         q = q.filter(AgentRecord.owner == owner)
-    return q.order_by(AgentRecord.last_seen.desc()).offset(offset).limit(limit).all()
+    if environment:
+        q = q.filter(AgentRecord.environment == environment)
+    if risk_tier:
+        q = q.filter(AgentRecord.risk_tier == risk_tier)
+    if status:
+        q = q.filter(AgentRecord.status == status)
+    records = q.order_by(AgentRecord.last_seen.desc()).offset(offset).limit(limit).all()
+    if traceability:
+        # traceability_status is a derived property, so filter in Python.
+        records = [r for r in records if r.traceability_status == traceability]
+    return records
 
 
 @app.get("/api/v1/agents/{agent_id}", response_model=AgentResponse)
@@ -185,13 +196,29 @@ def governance_summary(db: Session = Depends(get_db)):
     by_framework: dict = {}
     for a in agents:
         by_framework[a.framework] = by_framework.get(a.framework, 0) + 1
-    avg_score = sum(a.governance_score for a in agents) / len(agents) if agents else 0.0
+    total = len(agents)
+    avg_score = sum(a.governance_score for a in agents) / total if agents else 0.0
     below_50 = sum(1 for a in agents if a.governance_score < 50)
+
+    # Accountability / traceability rollup.
+    checks = [trace_checks(a) for a in agents]
+    statuses = [a.traceability_status for a in agents]
+    pct = lambda key: round(100.0 * sum(1 for c in checks if c[key]) / total, 0) if total else 0.0
+    traceability = RegisterSummary(
+        total=total,
+        pct_with_owner=pct("owner"),
+        pct_with_identity=pct("identity"),
+        pct_with_logging=pct("logging"),
+        red_count=statuses.count("red"),
+        amber_count=statuses.count("amber"),
+        green_count=statuses.count("green"),
+    )
     return {
-        "total": len(agents),
+        "total": total,
         "avg_score": round(avg_score, 1),
         "by_framework": by_framework,
         "below_50": below_50,
+        "traceability": traceability.dict(),
     }
 
 
@@ -246,150 +273,39 @@ def scan_path(body: ScanRequest, db: Session = Depends(get_db)):
     )
 
 
-# --------------------------------------------------------------------------- #
-# Agent Register — post-deployment accountability & traceability.              #
-# Metadata only: no credentials, secrets or tokens are ever stored.            #
-# --------------------------------------------------------------------------- #
-
-
-def _make_registered_agent_id(body: RegisteredAgentCreate) -> str:
-    if body.agent_id:
-        return body.agent_id
-    raw = f"{body.name}:{body.vendor or ''}"
-    return hashlib.sha256(raw.encode()).hexdigest()[:32]
-
-
-def _registered_response(record: RegisteredAgent) -> RegisteredAgentResponse:
-    resp = RegisteredAgentResponse.from_orm(record)
-    resp.traceability_status = traceability_status(record)
-    resp.traceability_gaps = traceability_gaps(record)
-    return resp
-
-
-def _get_registered_or_404(db: Session, agent_id: str) -> RegisteredAgent:
-    record = db.query(RegisteredAgent).filter_by(agent_id=agent_id).first()
-    if not record:
-        raise HTTPException(status_code=404, detail=f"Registered agent '{agent_id}' not found")
-    return record
-
-
-@app.post("/api/v1/register/agents", response_model=RegisteredAgentResponse, status_code=201)
-def create_registered_agent(body: RegisteredAgentCreate, db: Session = Depends(get_db)):
-    agent_id = _make_registered_agent_id(body)
-    if db.query(RegisteredAgent).filter_by(agent_id=agent_id).first():
-        raise HTTPException(status_code=409, detail="Agent already in register")
-
-    data = body.dict(exclude_none=True)
-    data.pop("agent_id", None)
-    record = RegisteredAgent(agent_id=agent_id, **data)
-    db.add(record)
-    db.commit()
-    db.refresh(record)
-    return _registered_response(record)
-
-
-@app.get("/api/v1/register/agents", response_model=List[RegisteredAgentResponse])
-def list_registered_agents(
-    environment: Optional[str] = None,
-    risk_tier: Optional[str] = None,
-    status: Optional[str] = None,
-    owner: Optional[str] = None,
-    traceability: Optional[str] = None,
-    db: Session = Depends(get_db),
-):
-    q = db.query(RegisteredAgent)
-    if environment:
-        q = q.filter(RegisteredAgent.environment == environment)
-    if risk_tier:
-        q = q.filter(RegisteredAgent.risk_tier == risk_tier)
-    if status:
-        q = q.filter(RegisteredAgent.status == status)
-    if owner:
-        q = q.filter(RegisteredAgent.owner_name == owner)
-    records = q.order_by(RegisteredAgent.name.asc()).all()
-    responses = [_registered_response(r) for r in records]
-    if traceability:
-        responses = [r for r in responses if r.traceability_status == traceability]
-    return responses
-
-
-@app.get("/api/v1/register/summary", response_model=RegisterSummary)
-def register_summary(db: Session = Depends(get_db)):
-    records = db.query(RegisteredAgent).all()
-    total = len(records)
-    if total == 0:
-        return RegisterSummary(
-            total=0, pct_with_owner=0.0, pct_with_identity=0.0,
-            pct_with_logging=0.0, red_count=0, amber_count=0, green_count=0,
-        )
-    checks = [trace_checks(r) for r in records]
-    statuses = [traceability_status(r) for r in records]
-    pct = lambda key: round(100.0 * sum(1 for c in checks if c[key]) / total, 0)
-    return RegisterSummary(
-        total=total,
-        pct_with_owner=pct("owner"),
-        pct_with_identity=pct("identity"),
-        pct_with_logging=pct("logging"),
-        red_count=statuses.count("red"),
-        amber_count=statuses.count("amber"),
-        green_count=statuses.count("green"),
-    )
-
-
-@app.get("/api/v1/register/agents/{agent_id}", response_model=RegisteredAgentResponse)
-def get_registered_agent(agent_id: str, db: Session = Depends(get_db)):
-    return _registered_response(_get_registered_or_404(db, agent_id))
-
-
-@app.patch("/api/v1/register/agents/{agent_id}", response_model=RegisteredAgentResponse)
-def update_registered_agent(agent_id: str, body: RegisteredAgentUpdate, db: Session = Depends(get_db)):
-    record = _get_registered_or_404(db, agent_id)
-    for field_name, value in body.dict(exclude_unset=True).items():
-        setattr(record, field_name, value)
-    db.commit()
-    db.refresh(record)
-    return _registered_response(record)
-
-
-@app.delete("/api/v1/register/agents/{agent_id}", status_code=204)
-def delete_registered_agent(agent_id: str, db: Session = Depends(get_db)):
-    record = _get_registered_or_404(db, agent_id)
-    db.delete(record)
-    db.commit()
-
-
 _CSV_COLUMNS = [
-    "agent_id", "name", "description", "vendor", "environment", "deployment_date",
-    "status", "traceability_status", "traceability_gaps", "owner_name", "owner_role",
-    "owner_contact", "has_unique_identity", "identity_provider", "credential_scope",
-    "last_credential_rotation", "autonomy_level", "risk_tier", "permitted_actions",
-    "action_logging", "log_location", "last_audit_review",
+    "agent_id", "name", "framework", "vendor", "environment", "status",
+    "governance_score", "traceability_status", "traceability_gaps",
+    "owner", "owner_role", "owner_contact", "has_unique_identity",
+    "identity_provider", "credential_scope", "last_credential_rotation",
+    "autonomy_level", "risk_tier", "permitted_actions", "action_logging",
+    "log_location", "last_audit_review", "deployment_date", "description",
 ]
 
 
-@app.get("/api/v1/register/export.csv")
-def export_register_csv(db: Session = Depends(get_db)):
-    records = db.query(RegisteredAgent).order_by(RegisteredAgent.name.asc()).all()
+@app.get("/api/v1/export.csv")
+def export_agents_csv(db: Session = Depends(get_db)):
+    records = db.query(AgentRecord).order_by(AgentRecord.name.asc()).all()
     buf = io.StringIO()
     writer = csv.writer(buf)
     writer.writerow(_CSV_COLUMNS)
     for r in records:
-        resp = _registered_response(r)
         writer.writerow([
-            resp.agent_id, resp.name, resp.description or "", resp.vendor or "",
-            resp.environment or "", resp.deployment_date or "", resp.status,
-            resp.traceability_status, "; ".join(resp.traceability_gaps),
-            resp.owner_name or "", resp.owner_role or "", resp.owner_contact or "",
-            resp.has_unique_identity, resp.identity_provider or "",
-            resp.credential_scope or "", resp.last_credential_rotation or "",
-            resp.autonomy_level or "", resp.risk_tier or "",
-            "; ".join(resp.permitted_actions or []), resp.action_logging,
-            resp.log_location or "", resp.last_audit_review or "",
+            r.agent_id, r.name, r.framework or "", r.vendor or "",
+            r.environment or "", r.status, r.governance_score,
+            r.traceability_status, "; ".join(r.traceability_gaps),
+            r.owner or "", r.owner_role or "", r.owner_contact or "",
+            r.has_unique_identity, r.identity_provider or "",
+            r.credential_scope or "", r.last_credential_rotation or "",
+            r.autonomy_level or "", r.risk_tier or "",
+            "; ".join(r.permitted_actions or []), r.action_logging,
+            r.log_location or "", r.last_audit_review or "",
+            r.deployment_date or "", r.description or "",
         ])
     return Response(
         content=buf.getvalue(),
         media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=agent_register.csv"},
+        headers={"Content-Disposition": "attachment; filename=agent_registry.csv"},
     )
 
 

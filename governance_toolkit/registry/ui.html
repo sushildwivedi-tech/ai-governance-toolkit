@@ -294,8 +294,7 @@
   <!-- Tabs -->
   <div class="tabs">
     <div class="tab" id="tab-btn-pre" onclick="switchTab('pre')">Pre-Build <span class="tab-sub">· Design Gate</span></div>
-    <div class="tab" id="tab-btn-post" onclick="switchTab('post')">Post-Build <span class="tab-sub">· Scan &amp; Registry</span></div>
-    <div class="tab" id="tab-btn-register" onclick="switchTab('register')">Agent Register <span class="tab-sub">· Accountability</span></div>
+    <div class="tab" id="tab-btn-post" onclick="switchTab('post')">Post-Build <span class="tab-sub">· Scan, Registry &amp; Accountability</span></div>
   </div>
 
   <!-- Pre-Build tab: Design Gate -->
@@ -333,22 +332,30 @@
     </div>
   </section>
 
-  <!-- Post-Build tab: Scan & Registry -->
+  <!-- Post-Build tab: unified registry (scan + accountability) -->
   <section class="tab-section hidden" id="tab-post">
 
   <!-- Intro -->
   <div>
-    <div class="dg-kicker">Shift-Left AI Governance</div>
-    <h2 class="dg-title">Agent Registry &amp; Scanner</h2>
-    <p class="dg-sub">Discover the AI agents <strong>already running in your code</strong> &mdash; after they're built, before they cause an incident. Scan any Python project to surface every agent, then register and score each one 0&ndash;100 against the OWASP LLM governance criteria.</p>
+    <div class="dg-kicker">Identity is the first control for agentic AI</div>
+    <h2 class="dg-title">Agent Registry</h2>
+    <p class="dg-sub">One inventory of every AI agent you run &mdash; discovered by scanning your code, or added by hand. Each agent gets an <strong>OWASP governance score</strong> (0&ndash;100) <em>and</em> a <strong>traceability status</strong> rolling up who owns it, whether it has its own identity, and whether its actions are logged. Only ~28% of organisations (Cloud Security Alliance) can trace an agent's action back to an accountable human.</p>
+  </div>
+
+  <!-- Metadata-only note -->
+  <div class="meta-note">
+    <span class="ico">🔒</span>
+    <span>This is a <strong>registry, not an IAM system</strong>. It holds <strong>metadata only</strong> &mdash; descriptive fields about each agent's identity, scope and audit posture. Never record real credentials, secrets or tokens here.</span>
   </div>
 
   <!-- Summary cards -->
-  <div class="cards" id="cards">
-    <div class="card purple"><div class="label">Total Agents</div><div class="value" id="c-total">—</div><div class="sub">registered in registry</div></div>
-    <div class="card" id="card-avg"><div class="label">Avg Governance Score</div><div class="value" id="c-avg">—</div><div class="sub">out of 100</div></div>
-    <div class="card red"><div class="label">Below 50</div><div class="value" id="c-below">—</div><div class="sub">governance-absent agents</div></div>
-    <div class="card"><div class="label">Frameworks</div><div class="value" id="c-fw">—</div><div class="sub" id="c-fw-list" style="font-size:11px;line-height:1.6">—</div></div>
+  <div class="cards" id="cards" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+    <div class="card purple"><div class="label">Total Agents</div><div class="value" id="c-total">—</div><div class="sub">in the registry</div></div>
+    <div class="card" id="card-avg"><div class="label">Avg OWASP Score</div><div class="value" id="c-avg">—</div><div class="sub">out of 100</div></div>
+    <div class="card" id="c-owner-card"><div class="label">% Accountable Owner</div><div class="value" id="c-owner">—</div><div class="sub">named human</div></div>
+    <div class="card" id="c-id-card"><div class="label">% Unique Identity</div><div class="value" id="c-id">—</div><div class="sub">not shared / human acct</div></div>
+    <div class="card" id="c-log-card"><div class="label">% Action Logging</div><div class="value" id="c-log">—</div><div class="sub">full logging in place</div></div>
+    <div class="card red"><div class="label">Red-Status Agents</div><div class="value" id="c-red">—</div><div class="sub">two or more gaps</div></div>
   </div>
 
   <!-- Scan panel -->
@@ -364,95 +371,46 @@
 
   <!-- Registry table -->
   <div class="panel">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap;">
       <h2 style="margin:0">Agent Registry</h2>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input type="text" id="filter-input" placeholder="Filter by name, owner, framework…" style="width:240px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;outline:none;" oninput="filterAgents()" />
-        <button class="btn-secondary" onclick="loadAgents()" style="padding:7px 14px;font-size:12px;">↻ Refresh</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="openAgentModal()">+ Add agent</button>
+        <button class="btn-secondary" onclick="exportCsv()">Export CSV</button>
+        <button class="btn-secondary" onclick="openBoardSummary()">Board summary ⎙</button>
+        <button class="btn-secondary" onclick="openMapping()">Governance mapping</button>
       </div>
     </div>
+
+    <div class="reg-toolbar" style="margin-bottom:16px;">
+      <input type="text" id="reg-search" class="grow" placeholder="Search name, owner, vendor, framework…" oninput="renderTable()" />
+      <select id="reg-f-env" onchange="renderTable()"><option value="">All environments</option><option value="prod">prod</option><option value="staging">staging</option><option value="dev">dev</option></select>
+      <select id="reg-f-risk" onchange="renderTable()"><option value="">All risk tiers</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="critical">critical</option></select>
+      <select id="reg-f-trace" onchange="renderTable()"><option value="">All traceability</option><option value="green">green</option><option value="amber">amber</option><option value="red">red</option></select>
+      <select id="reg-f-owner" onchange="renderTable()"><option value="">All owners</option></select>
+    </div>
+
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Agent</th>
-            <th>Framework</th>
-            <th>Model</th>
-            <th>Owner</th>
-            <th>Score</th>
-            <th>Last Seen</th>
+            <th class="sortable" onclick="sortAgents('traceability_status')">Trace</th>
+            <th class="sortable" onclick="sortAgents('name')">Agent</th>
+            <th class="sortable" onclick="sortAgents('framework')">Framework</th>
+            <th class="sortable" onclick="sortAgents('owner')">Owner</th>
+            <th>Identity</th>
+            <th class="sortable" onclick="sortAgents('governance_score')">OWASP</th>
+            <th class="sortable" onclick="sortAgents('risk_tier')">Risk</th>
+            <th>Logging</th>
+            <th class="sortable" onclick="sortAgents('status')">Status</th>
             <th></th>
           </tr>
         </thead>
         <tbody id="agents-tbody">
-          <tr><td colspan="7"><div class="empty"><div class="icon">🔍</div><p>No agents yet. Run a scan above.</p></div></td></tr>
+          <tr><td colspan="10"><div class="empty"><div class="icon">🔍</div><p>No agents yet. Scan a codebase or add one.</p></div></td></tr>
         </tbody>
       </table>
     </div>
   </div>
-
-  </section>
-
-  <!-- Agent Register tab -->
-  <section class="tab-section hidden" id="tab-register">
-
-    <!-- Metadata-only note -->
-    <div class="meta-note">
-      <span class="ico">🔒</span>
-      <span>This is a <strong>register, not an IAM system</strong>. It holds <strong>metadata only</strong> &mdash; descriptive fields about each agent's identity, scope and audit posture. Never record real credentials, secrets or tokens here.</span>
-    </div>
-
-    <!-- Overview cards -->
-    <div class="cards" id="reg-cards">
-      <div class="card purple"><div class="label">Total Agents</div><div class="value" id="rc-total">—</div><div class="sub">in the register</div></div>
-      <div class="card" id="rc-owner-card"><div class="label">% With Accountable Owner</div><div class="value" id="rc-owner">—</div><div class="sub">named human</div></div>
-      <div class="card" id="rc-id-card"><div class="label">% With Unique Identity</div><div class="value" id="rc-id">—</div><div class="sub">not shared / human acct</div></div>
-      <div class="card" id="rc-log-card"><div class="label">% With Action Logging</div><div class="value" id="rc-log">—</div><div class="sub">full logging in place</div></div>
-      <div class="card red"><div class="label">Red-Status Agents</div><div class="value" id="rc-red">—</div><div class="sub">two or more gaps</div></div>
-    </div>
-
-    <!-- Register panel -->
-    <div class="panel">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap;">
-        <h2 style="margin:0">Agent Register</h2>
-        <div style="display:flex;gap:8px;">
-          <button onclick="openAgentModal()">+ Add agent</button>
-          <button class="btn-secondary" onclick="exportRegisterCsv()">Export CSV</button>
-          <button class="btn-secondary" onclick="openBoardSummary()">Board summary ⎙</button>
-          <button class="btn-secondary" onclick="openMapping()">Governance mapping</button>
-        </div>
-      </div>
-
-      <div class="reg-toolbar" style="margin-bottom:16px;">
-        <input type="text" id="reg-search" class="grow" placeholder="Search name, owner, vendor, provider…" oninput="renderRegister()" />
-        <select id="reg-f-env" onchange="renderRegister()"><option value="">All environments</option><option value="prod">prod</option><option value="staging">staging</option><option value="dev">dev</option></select>
-        <select id="reg-f-risk" onchange="renderRegister()"><option value="">All risk tiers</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="critical">critical</option></select>
-        <select id="reg-f-trace" onchange="renderRegister()"><option value="">All traceability</option><option value="green">green</option><option value="amber">amber</option><option value="red">red</option></select>
-        <select id="reg-f-owner" onchange="renderRegister()"><option value="">All owners</option></select>
-      </div>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th class="sortable" onclick="sortRegister('traceability_status')">Trace</th>
-              <th class="sortable" onclick="sortRegister('name')">Agent</th>
-              <th class="sortable" onclick="sortRegister('environment')">Env</th>
-              <th class="sortable" onclick="sortRegister('owner_name')">Owner</th>
-              <th>Identity</th>
-              <th>Autonomy</th>
-              <th class="sortable" onclick="sortRegister('risk_tier')">Risk</th>
-              <th>Logging</th>
-              <th class="sortable" onclick="sortRegister('status')">Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="reg-tbody">
-            <tr><td colspan="10"><div class="empty"><div class="icon">🗂️</div><p>No agents in the register yet.</p></div></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
 
   </section>
 
@@ -477,6 +435,8 @@
         <div class="form-grid">
           <div class="field full"><label>Name *</label><input type="text" id="f-name" required /></div>
           <div class="field full"><label>Description</label><textarea id="f-description"></textarea></div>
+          <div class="field"><label>Framework</label><select id="f-framework"><option value="unknown">unknown</option><option value="anthropic_claude">Claude SDK</option><option value="langchain">LangChain</option><option value="langgraph">LangGraph</option><option value="crewai">CrewAI</option><option value="autogpt">AutoGPT</option></select></div>
+          <div class="field"><label>Model</label><input type="text" id="f-model" placeholder="claude-opus-4-5" /></div>
           <div class="field"><label>Vendor / system</label><input type="text" id="f-vendor" placeholder="internal · Copilot · custom LangGraph" /></div>
           <div class="field"><label>Environment</label><select id="f-environment"><option value="">—</option><option value="prod">prod</option><option value="staging">staging</option><option value="dev">dev</option></select></div>
           <div class="field"><label>Deployment date</label><input type="date" id="f-deployment_date" /></div>
@@ -487,7 +447,7 @@
       <div class="form-section">
         <h4>Accountability</h4>
         <div class="form-grid">
-          <div class="field"><label>Owner name (named human)</label><input type="text" id="f-owner_name" /></div>
+          <div class="field"><label>Owner (named human)</label><input type="text" id="f-owner" /></div>
           <div class="field"><label>Owner role</label><input type="text" id="f-owner_role" /></div>
           <div class="field full"><label>Owner contact</label><input type="text" id="f-owner_contact" placeholder="email or handle" /></div>
         </div>
@@ -510,6 +470,16 @@
           <div class="field"><label>Autonomy level</label><select id="f-autonomy_level"><option value="">—</option><option value="suggest_only">suggest-only</option><option value="act_with_approval">act-with-approval</option><option value="act_autonomously">act-autonomously</option></select></div>
           <div class="field"><label>Risk tier</label><select id="f-risk_tier"><option value="">—</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="critical">critical</option></select></div>
           <div class="field full"><label>Permitted actions / systems (comma-separated)</label><input type="text" id="f-permitted_actions" placeholder="read_tickets, draft_reply, send_reply" /></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h4>Data &amp; Ethics <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">· feeds OWASP score</span></h4>
+        <div class="form-grid">
+          <div class="field"><label>Data classification</label><select id="f-data_classification"><option value="">—</option><option value="public">public</option><option value="internal">internal</option><option value="confidential">confidential</option><option value="restricted">restricted</option></select></div>
+          <div class="field"><label>Ethics review status</label><select id="f-ethics_review_status"><option value="">—</option><option value="pending">pending</option><option value="in_review">in_review</option><option value="passed">passed</option><option value="failed">failed</option><option value="not_required">not_required</option></select></div>
+          <div class="field"><label>Ethics review date</label><input type="date" id="f-ethics_review_date" /></div>
+          <div class="field"><label>Tools (comma-separated)</label><input type="text" id="f-tools" placeholder="search_kb, create_ticket" /></div>
         </div>
       </div>
 
@@ -634,67 +604,120 @@ async function api(path, opts = {}) {
   return r.status === 204 ? null : r.json();
 }
 
+const TRACE_ORDER = { red: 0, amber: 1, green: 2 };
+const RISK_ORDER = { low: 0, medium: 1, high: 2, critical: 3 };
+let sortState = { key: 'traceability_status', dir: 1 };
+
+function pctColor(p) { if (p >= 80) return 'green'; if (p >= 50) return 'yellow'; return 'red'; }
+
 async function loadSummary() {
   try {
     const s = await api('/api/v1/summary');
+    const t = s.traceability || {};
     document.getElementById('c-total').textContent = s.total;
-    const avg = s.avg_score;
-    const avgEl = document.getElementById('c-avg');
-    const avgCard = document.getElementById('card-avg');
-    avgEl.textContent = avg.toFixed(1);
-    avgCard.className = 'card ' + scoreColor(avg);
-    document.getElementById('c-below').textContent = s.below_50;
-    document.getElementById('c-fw').textContent = Object.keys(s.by_framework).length;
-    const fwLines = Object.entries(s.by_framework).map(([k,v]) => `${FW_LABELS[k]||k}: ${v}`).join(' · ');
-    document.getElementById('c-fw-list').textContent = fwLines || '—';
+    const avg = s.avg_score || 0;
+    document.getElementById('c-avg').textContent = avg.toFixed(1);
+    document.getElementById('card-avg').className = 'card ' + scoreColor(avg);
+    const setPct = (id, cardId, v) => {
+      document.getElementById(id).textContent = s.total ? Math.round(v) + '%' : '—';
+      document.getElementById(cardId).className = 'card ' + pctColor(v);
+    };
+    setPct('c-owner', 'c-owner-card', t.pct_with_owner || 0);
+    setPct('c-id', 'c-id-card', t.pct_with_identity || 0);
+    setPct('c-log', 'c-log-card', t.pct_with_logging || 0);
+    document.getElementById('c-red').textContent = t.red_count || 0;
   } catch(e) { console.warn('summary error', e); }
 }
 
 async function loadAgents() {
   try {
     allAgents = await api('/api/v1/agents?limit=500');
-    renderTable(allAgents);
+    populateOwnerFilter();
+    renderTable();
     await loadSummary();
   } catch(e) {
     toast('Failed to load agents: ' + e.message, 'err');
   }
 }
 
-function filterAgents() {
-  const q = document.getElementById('filter-input').value.toLowerCase();
-  if (!q) { renderTable(allAgents); return; }
-  renderTable(allAgents.filter(a =>
-    (a.name||'').toLowerCase().includes(q) ||
-    (a.owner||'').toLowerCase().includes(q) ||
-    (a.framework||'').toLowerCase().includes(q) ||
-    (a.model||'').toLowerCase().includes(q)
-  ));
+function populateOwnerFilter() {
+  const sel = document.getElementById('reg-f-owner');
+  const cur = sel.value;
+  const owners = [...new Set(allAgents.map(a => a.owner).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">All owners</option>' + owners.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
+  sel.value = cur;
 }
 
-function renderTable(agents) {
+function sortAgents(key) {
+  if (sortState.key === key) sortState.dir *= -1; else { sortState.key = key; sortState.dir = 1; }
+  renderTable();
+}
+
+function renderTable() {
+  const q = document.getElementById('reg-search').value.toLowerCase();
+  const fEnv = document.getElementById('reg-f-env').value;
+  const fRisk = document.getElementById('reg-f-risk').value;
+  const fTrace = document.getElementById('reg-f-trace').value;
+  const fOwner = document.getElementById('reg-f-owner').value;
+
+  let list = allAgents.filter(a => {
+    if (fEnv && a.environment !== fEnv) return false;
+    if (fRisk && a.risk_tier !== fRisk) return false;
+    if (fTrace && a.traceability_status !== fTrace) return false;
+    if (fOwner && a.owner !== fOwner) return false;
+    if (q) {
+      const hay = [a.name, a.owner, a.vendor, a.framework, a.model, a.identity_provider].map(x => (x || '').toLowerCase()).join(' ');
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const k = sortState.key, dir = sortState.dir;
+  list.sort((a, b) => {
+    let av, bv;
+    if (k === 'traceability_status') { av = TRACE_ORDER[a.traceability_status]; bv = TRACE_ORDER[b.traceability_status]; }
+    else if (k === 'risk_tier') { av = RISK_ORDER[a.risk_tier] ?? -1; bv = RISK_ORDER[b.risk_tier] ?? -1; }
+    else if (k === 'governance_score') { av = a.governance_score || 0; bv = b.governance_score || 0; }
+    else { av = (a[k] || '').toString().toLowerCase(); bv = (b[k] || '').toString().toLowerCase(); }
+    return av < bv ? -dir : av > bv ? dir : 0;
+  });
+
   const tbody = document.getElementById('agents-tbody');
-  if (!agents.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="icon">🔍</div><p>No agents registered yet. Run a scan above.</p></div></td></tr>`;
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty"><div class="icon">🔍</div><p>No agents match these filters.</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = agents.map(a => {
-    const sc = a.governance_score || 0;
-    const col = scoreColor(sc);
+  tbody.innerHTML = list.map(a => {
+    const t = a.traceability_status;
+    const gaps = (a.traceability_gaps || []).join(', ');
     const fw = a.framework || 'unknown';
+    const sc = a.governance_score || 0;
+    const scCol = scoreColor(sc);
+    const ownerCell = a.owner
+      ? `<div style="font-weight:600">${esc(a.owner)}</div><div style="font-size:11px;color:var(--muted)">${esc(a.owner_role || '')}</div>`
+      : `<span class="flag">⚠ No owner</span>`;
+    const idCell = a.has_unique_identity
+      ? `<span class="pill ok">✓ Unique</span><div style="font-size:11px;color:var(--muted);margin-top:3px">${esc(a.identity_provider || '')}</div>`
+      : `<span class="pill bad">✗ Shared</span><div style="font-size:11px;color:var(--muted);margin-top:3px">${esc(a.identity_provider || '')}</div>`;
+    const logCls = a.action_logging === 'yes' ? 'ok' : a.action_logging === 'partial' ? 'warn' : 'bad';
     return `<tr>
+      <td><span class="trace ${t}" title="${esc(gaps ? 'Missing: ' + gaps : 'Fully traceable')}"><span class="trace-dot ${t}"></span>${t}</span></td>
       <td>
         <div style="font-weight:600">${esc(a.name)}</div>
-        <div style="font-size:11px;color:var(--muted);font-family:monospace">${(a.agent_id||'').slice(0,12)}</div>
+        <div style="font-size:11px;color:var(--muted)">${esc(a.vendor || '')}</div>
         ${a.file_path ? `<div class="trunc" style="font-size:11px;color:var(--muted)" title="${esc(a.file_path)}">${esc(a.file_path)}</div>` : ''}
       </td>
       <td><span class="fw-tag ${fwClass(fw)}">${FW_LABELS[fw]||fw}</span></td>
-      <td style="color:var(--muted);font-size:12px">${esc(a.model||'—')}</td>
-      <td style="font-size:12px">${esc(a.owner||'—')}</td>
-      <td><span class="score ${col}">${sc.toFixed(0)}/100</span></td>
-      <td style="color:var(--muted);font-size:12px;white-space:nowrap">${fmt(a.last_seen)}</td>
+      <td>${ownerCell}</td>
+      <td>${idCell}</td>
+      <td><span class="score ${scCol}">${sc.toFixed(0)}/100</span></td>
+      <td><span class="pill risk-${a.risk_tier}" style="font-weight:700">${esc(a.risk_tier || '—')}</span></td>
+      <td><span class="pill ${logCls}">${esc(a.action_logging || 'no')}</span></td>
+      <td><span class="pill">${esc(a.status || '—')}</span></td>
       <td style="display:flex;gap:6px;justify-content:flex-end">
         <button class="action-btn" onclick="showScore('${a.agent_id}')">Score</button>
-        <button class="action-btn" style="border-color:rgba(239,68,68,.3);color:var(--red)" onclick="deleteAgent('${a.agent_id}', this)">Unregister</button>
+        <button class="action-btn" onclick="openAgentModal('${a.agent_id}')">Edit</button>
+        <button class="action-btn" style="border-color:rgba(239,68,68,.3);color:var(--red)" onclick="deleteAgent('${a.agent_id}', this)">Delete</button>
       </td>
     </tr>`;
   }).join('');
@@ -746,15 +769,15 @@ async function deleteAgent(agentId, btn) {
   if (!btn.dataset.confirm) {
     btn.textContent = 'Sure?';
     btn.dataset.confirm = '1';
-    setTimeout(() => { btn.textContent = 'Unregister'; delete btn.dataset.confirm; }, 3000);
+    setTimeout(() => { btn.textContent = 'Delete'; delete btn.dataset.confirm; }, 3000);
     return;
   }
   try {
     await api(`/api/v1/agents/${agentId}`, { method: 'DELETE' });
-    toast('Agent unregistered', 'ok');
+    toast('Agent removed from registry', 'ok');
     loadAgents();
   } catch(e) {
-    toast('Unregister failed: ' + e.message, 'err');
+    toast('Delete failed: ' + e.message, 'err');
   }
 }
 
@@ -818,14 +841,13 @@ async function runScan() {
 /* ---------- Tabs ---------- */
 
 function switchTab(name) {
-  const tabs = ['pre', 'post', 'register'];
-  const hashes = { pre: '#pre-build', post: '#post-build', register: '#register' };
+  const tabs = ['pre', 'post'];
+  const hashes = { pre: '#pre-build', post: '#post-build' };
   tabs.forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('hidden', t !== name);
     document.getElementById('tab-btn-' + t).classList.toggle('active', t === name);
   });
   history.replaceState(null, '', hashes[name] || '#pre-build');
-  if (name === 'register') loadRegister();
 }
 
 /* ---------- Design Gate (Pre-Build) ---------- */
@@ -1002,122 +1024,7 @@ document.getElementById("dg-resetBtn").addEventListener("click",()=>{
   dgRender();dgUpdate();
 });
 
-/* ---------- Agent Register ---------- */
-
-let regAgents = [];
-let regSort = { key: 'traceability_status', dir: 1 };
-
-const AUTONOMY_LABELS = { suggest_only: 'suggest-only', act_with_approval: 'act-with-approval', act_autonomously: 'act-autonomously' };
-const TRACE_ORDER = { red: 0, amber: 1, green: 2 };
-const RISK_ORDER = { low: 0, medium: 1, high: 2, critical: 3 };
-
-async function loadRegister() {
-  try {
-    regAgents = await api('/api/v1/register/agents');
-    populateOwnerFilter();
-    renderRegister();
-    await loadRegisterSummary();
-  } catch (e) {
-    toast('Failed to load register: ' + e.message, 'err');
-  }
-}
-
-async function loadRegisterSummary() {
-  try {
-    const s = await api('/api/v1/register/summary');
-    document.getElementById('rc-total').textContent = s.total;
-    const set = (id, val, cardId) => {
-      document.getElementById(id).textContent = s.total ? val.toFixed(0) + '%' : '—';
-      if (cardId) document.getElementById(cardId).className = 'card ' + pctColor(val);
-    };
-    set('rc-owner', s.pct_with_owner, 'rc-owner-card');
-    set('rc-id', s.pct_with_identity, 'rc-id-card');
-    set('rc-log', s.pct_with_logging, 'rc-log-card');
-    document.getElementById('rc-red').textContent = s.red_count;
-  } catch (e) { console.warn('register summary error', e); }
-}
-
-function pctColor(p) { if (p >= 80) return 'green'; if (p >= 50) return 'yellow'; return 'red'; }
-
-function populateOwnerFilter() {
-  const sel = document.getElementById('reg-f-owner');
-  const current = sel.value;
-  const owners = [...new Set(regAgents.map(a => a.owner_name).filter(Boolean))].sort();
-  sel.innerHTML = '<option value="">All owners</option>' + owners.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
-  sel.value = current;
-}
-
-function sortRegister(key) {
-  if (regSort.key === key) regSort.dir *= -1; else { regSort.key = key; regSort.dir = 1; }
-  renderRegister();
-}
-
-function renderRegister() {
-  const q = document.getElementById('reg-search').value.toLowerCase();
-  const fEnv = document.getElementById('reg-f-env').value;
-  const fRisk = document.getElementById('reg-f-risk').value;
-  const fTrace = document.getElementById('reg-f-trace').value;
-  const fOwner = document.getElementById('reg-f-owner').value;
-
-  let list = regAgents.filter(a => {
-    if (fEnv && a.environment !== fEnv) return false;
-    if (fRisk && a.risk_tier !== fRisk) return false;
-    if (fTrace && a.traceability_status !== fTrace) return false;
-    if (fOwner && a.owner_name !== fOwner) return false;
-    if (q) {
-      const hay = [a.name, a.owner_name, a.vendor, a.identity_provider, a.description].map(x => (x || '').toLowerCase()).join(' ');
-      if (!hay.includes(q)) return false;
-    }
-    return true;
-  });
-
-  const k = regSort.key, dir = regSort.dir;
-  list.sort((a, b) => {
-    let av, bv;
-    if (k === 'traceability_status') { av = TRACE_ORDER[a.traceability_status]; bv = TRACE_ORDER[b.traceability_status]; }
-    else if (k === 'risk_tier') { av = RISK_ORDER[a.risk_tier] ?? -1; bv = RISK_ORDER[b.risk_tier] ?? -1; }
-    else { av = (a[k] || '').toString().toLowerCase(); bv = (b[k] || '').toString().toLowerCase(); }
-    return av < bv ? -dir : av > bv ? dir : 0;
-  });
-
-  const tbody = document.getElementById('reg-tbody');
-  if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty"><div class="icon">🗂️</div><p>No agents match these filters.</p></div></td></tr>`;
-    return;
-  }
-  tbody.innerHTML = list.map(a => {
-    const t = a.traceability_status;
-    const gaps = (a.traceability_gaps || []).join(', ');
-    const ownerCell = a.owner_name
-      ? `<div style="font-weight:600">${esc(a.owner_name)}</div><div style="font-size:11px;color:var(--muted)">${esc(a.owner_role || '')}</div>`
-      : `<span class="flag">⚠ No owner</span>`;
-    const idCell = a.has_unique_identity
-      ? `<span class="pill ok">✓ Unique</span><div style="font-size:11px;color:var(--muted);margin-top:3px">${esc(a.identity_provider || '')}</div>`
-      : `<span class="pill bad">✗ Shared</span><div style="font-size:11px;color:var(--muted);margin-top:3px">${esc(a.identity_provider || '')}</div>`;
-    const logCls = a.action_logging === 'yes' ? 'ok' : a.action_logging === 'partial' ? 'warn' : 'bad';
-    return `<tr>
-      <td><span class="trace ${t}" title="${esc(gaps ? 'Missing: ' + gaps : 'Fully traceable')}"><span class="trace-dot ${t}"></span>${t}</span></td>
-      <td>
-        <div style="font-weight:600">${esc(a.name)}</div>
-        <div style="font-size:11px;color:var(--muted)">${esc(a.vendor || '')}</div>
-        ${a.description ? `<div class="trunc" style="font-size:11px;color:var(--muted)" title="${esc(a.description)}">${esc(a.description)}</div>` : ''}
-      </td>
-      <td><span class="pill">${esc(a.environment || '—')}</span></td>
-      <td>${ownerCell}</td>
-      <td>${idCell}</td>
-      <td style="font-size:12px">${esc(AUTONOMY_LABELS[a.autonomy_level] || '—')}</td>
-      <td><span class="pill risk-${a.risk_tier}" style="font-weight:700">${esc(a.risk_tier || '—')}</span></td>
-      <td><span class="pill ${logCls}">${esc(a.action_logging)}</span></td>
-      <td><span class="pill">${esc(a.status)}</span></td>
-      <td style="display:flex;gap:6px;justify-content:flex-end">
-        <button class="action-btn" onclick="openAgentModal('${a.agent_id}')">Edit</button>
-        <button class="action-btn" style="border-color:rgba(239,68,68,.3);color:var(--red)" onclick="deleteRegisteredAgent('${a.agent_id}', this)">Delete</button>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-/* ---- Register CRUD ---- */
+/* ---------- Registry CRUD (add / edit) ---------- */
 
 function dateInput(dt) { return dt ? new Date(dt).toISOString().slice(0, 10) : ''; }
 
@@ -1130,18 +1037,23 @@ async function openAgentModal(agentId) {
 
   if (agentId) {
     try {
-      const a = await api(`/api/v1/register/agents/${agentId}`);
+      const a = await api(`/api/v1/agents/${agentId}`);
       document.getElementById('f-agent-id').value = a.agent_id;
       const S = (id, v) => document.getElementById(id).value = v ?? '';
-      S('f-name', a.name); S('f-description', a.description); S('f-vendor', a.vendor);
-      S('f-environment', a.environment || ''); S('f-deployment_date', dateInput(a.deployment_date));
-      S('f-status', a.status || 'active');
-      S('f-owner_name', a.owner_name); S('f-owner_role', a.owner_role); S('f-owner_contact', a.owner_contact);
+      S('f-name', a.name); S('f-description', a.description);
+      S('f-framework', a.framework || 'unknown'); S('f-model', a.model);
+      S('f-vendor', a.vendor); S('f-environment', a.environment || '');
+      S('f-deployment_date', dateInput(a.deployment_date)); S('f-status', a.status || 'active');
+      S('f-owner', a.owner); S('f-owner_role', a.owner_role); S('f-owner_contact', a.owner_contact);
       document.getElementById('f-has_unique_identity').checked = !!a.has_unique_identity;
       S('f-identity_provider', a.identity_provider); S('f-credential_scope', a.credential_scope);
       S('f-last_credential_rotation', dateInput(a.last_credential_rotation));
       S('f-autonomy_level', a.autonomy_level || ''); S('f-risk_tier', a.risk_tier || '');
       S('f-permitted_actions', (a.permitted_actions || []).join(', '));
+      S('f-data_classification', a.data_classification || '');
+      S('f-ethics_review_status', a.ethics_review_status || '');
+      S('f-ethics_review_date', dateInput(a.ethics_review_date));
+      S('f-tools', (a.tools || []).join(', '));
       S('f-action_logging', a.action_logging || 'no'); S('f-log_location', a.log_location);
       S('f-last_audit_review', dateInput(a.last_audit_review));
       const log = document.getElementById('f-audit_notes_log');
@@ -1158,101 +1070,101 @@ function closeAgentModal(e) {
   }
 }
 
+function csvList(id) {
+  const v = document.getElementById(id).value.trim();
+  return v ? v.split(',').map(s => s.trim()).filter(Boolean) : null;
+}
+
 async function saveAgent(e) {
   e.preventDefault();
   const id = document.getElementById('f-agent-id').value;
   const V = id_ => { const v = document.getElementById(id_).value.trim(); return v === '' ? null : v; };
-  const actions = V('f-permitted_actions');
+  // Date inputs give 'YYYY-MM-DD'; the API's datetime fields need a full ISO value.
+  const D = id_ => { const v = document.getElementById(id_).value; return v ? v + 'T00:00:00' : null; };
+  const logging = document.getElementById('f-action_logging').value;
   const payload = {
     name: document.getElementById('f-name').value.trim(),
     description: V('f-description'),
+    framework: document.getElementById('f-framework').value,
+    model: V('f-model'),
     vendor: V('f-vendor'),
     environment: V('f-environment'),
-    deployment_date: V('f-deployment_date'),
+    deployment_date: D('f-deployment_date'),
     status: document.getElementById('f-status').value,
-    owner_name: V('f-owner_name'),
+    owner: V('f-owner'),
     owner_role: V('f-owner_role'),
     owner_contact: V('f-owner_contact'),
     has_unique_identity: document.getElementById('f-has_unique_identity').checked,
     identity_provider: V('f-identity_provider'),
     credential_scope: V('f-credential_scope'),
-    last_credential_rotation: V('f-last_credential_rotation'),
+    last_credential_rotation: D('f-last_credential_rotation'),
     autonomy_level: V('f-autonomy_level'),
     risk_tier: V('f-risk_tier'),
-    permitted_actions: actions ? actions.split(',').map(s => s.trim()).filter(Boolean) : null,
-    action_logging: document.getElementById('f-action_logging').value,
+    permitted_actions: csvList('f-permitted_actions'),
+    data_classification: V('f-data_classification'),
+    ethics_review_status: V('f-ethics_review_status'),
+    ethics_review_date: D('f-ethics_review_date'),
+    tools: csvList('f-tools'),
+    action_logging: logging,
+    // Keep the OWASP audit criterion consistent with the action_logging field.
+    audit_log_configured: logging === 'yes',
     log_location: V('f-log_location'),
-    last_audit_review: V('f-last_audit_review'),
+    last_audit_review: D('f-last_audit_review'),
   };
   const newNote = V('f-audit_note');
 
   try {
     if (id) {
-      // Preserve existing notes and append the new one.
       let notes = [];
-      const existing = regAgents.find(a => a.agent_id === id);
+      const existing = allAgents.find(a => a.agent_id === id);
       if (existing && existing.audit_notes) notes = [...existing.audit_notes];
       if (newNote) notes.push({ timestamp: new Date().toISOString(), note: newNote });
       payload.audit_notes = notes;
-      await api(`/api/v1/register/agents/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+      await api(`/api/v1/agents/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
       toast('Agent updated', 'ok');
     } else {
       if (newNote) payload.audit_notes = [{ timestamp: new Date().toISOString(), note: newNote }];
-      await api('/api/v1/register/agents', { method: 'POST', body: JSON.stringify(payload) });
-      toast('Agent added to register', 'ok');
+      await api('/api/v1/agents', { method: 'POST', body: JSON.stringify(payload) });
+      toast('Agent added to registry', 'ok');
     }
     document.getElementById('agent-modal').classList.remove('open');
-    loadRegister();
+    loadAgents();
   } catch (e) {
     toast('Save failed: ' + e.message, 'err');
   }
 }
 
-async function deleteRegisteredAgent(agentId, btn) {
-  if (!btn.dataset.confirm) {
-    btn.textContent = 'Sure?';
-    btn.dataset.confirm = '1';
-    setTimeout(() => { btn.textContent = 'Delete'; delete btn.dataset.confirm; }, 3000);
-    return;
-  }
-  try {
-    await api(`/api/v1/register/agents/${agentId}`, { method: 'DELETE' });
-    toast('Agent removed from register', 'ok');
-    loadRegister();
-  } catch (e) {
-    toast('Delete failed: ' + e.message, 'err');
-  }
-}
-
 /* ---- Reporting ---- */
 
-function exportRegisterCsv() {
-  window.location.href = '/api/v1/register/export.csv';
+function exportCsv() {
+  window.location.href = '/api/v1/export.csv';
 }
 
 async function openBoardSummary() {
   try {
-    const s = await api('/api/v1/register/summary');
-    const rows = [...regAgents].sort((a, b) => TRACE_ORDER[a.traceability_status] - TRACE_ORDER[b.traceability_status]);
+    const s = await api('/api/v1/summary');
+    const t = s.traceability || {};
+    const rows = [...allAgents].sort((a, b) => TRACE_ORDER[a.traceability_status] - TRACE_ORDER[b.traceability_status]);
     const bs = document.getElementById('board-summary');
-    const cls = t => t === 'red' ? 'bs-red' : t === 'amber' ? 'bs-amber' : 'bs-green';
+    const cls = st => st === 'red' ? 'bs-red' : st === 'amber' ? 'bs-amber' : 'bs-green';
     bs.innerHTML = `
-      <h1 style="font-size:20px;margin-bottom:2px">AI Agent Register — Board Summary</h1>
+      <h1 style="font-size:20px;margin-bottom:2px">AI Agent Registry — Board Summary</h1>
       <div style="font-size:12px;margin-bottom:14px">Identity is the first control for agentic AI. Generated ${new Date().toLocaleDateString()}.</div>
       <table style="margin-bottom:16px">
-        <tr><th>Total agents</th><th>% accountable owner</th><th>% unique identity</th><th>% action logging</th><th>Red-status</th></tr>
-        <tr><td>${s.total}</td><td>${s.pct_with_owner.toFixed(0)}%</td><td>${s.pct_with_identity.toFixed(0)}%</td><td>${s.pct_with_logging.toFixed(0)}%</td><td class="bs-red">${s.red_count}</td></tr>
+        <tr><th>Total agents</th><th>Avg OWASP</th><th>% accountable owner</th><th>% unique identity</th><th>% action logging</th><th>Red-status</th></tr>
+        <tr><td>${s.total}</td><td>${(s.avg_score||0).toFixed(0)}/100</td><td>${(t.pct_with_owner||0).toFixed(0)}%</td><td>${(t.pct_with_identity||0).toFixed(0)}%</td><td>${(t.pct_with_logging||0).toFixed(0)}%</td><td class="bs-red">${t.red_count||0}</td></tr>
       </table>
       <table>
-        <tr><th>Traceability</th><th>Agent</th><th>Vendor</th><th>Env</th><th>Owner</th><th>Unique ID</th><th>Logging</th><th>Risk</th><th>Status</th></tr>
+        <tr><th>Traceability</th><th>Agent</th><th>Framework</th><th>Env</th><th>Owner</th><th>Unique ID</th><th>Logging</th><th>OWASP</th><th>Risk</th><th>Status</th></tr>
         ${rows.map(a => `<tr>
           <td class="${cls(a.traceability_status)}">${a.traceability_status}</td>
-          <td>${esc(a.name)}</td><td>${esc(a.vendor || '')}</td><td>${esc(a.environment || '')}</td>
-          <td>${a.owner_name ? esc(a.owner_name) : '⚠ none'}</td>
+          <td>${esc(a.name)}</td><td>${esc(a.framework || '')}</td><td>${esc(a.environment || '')}</td>
+          <td>${a.owner ? esc(a.owner) : '⚠ none'}</td>
           <td>${a.has_unique_identity ? 'yes' : 'no'}</td><td>${esc(a.action_logging)}</td>
+          <td>${(a.governance_score||0).toFixed(0)}</td>
           <td>${esc(a.risk_tier || '')}</td><td>${esc(a.status)}</td></tr>`).join('')}
       </table>
-      <div style="font-size:10px;margin-top:14px">Register holds metadata only — no credentials or secrets. Mapped to cyber.gov.au "Careful adoption of agentic AI" guidance.</div>`;
+      <div style="font-size:10px;margin-top:14px">Registry holds metadata only — no credentials or secrets. Mapped to cyber.gov.au "Careful adoption of agentic AI" guidance.</div>`;
     window.print();
   } catch (e) {
     toast('Could not build summary: ' + e.message, 'err');
@@ -1272,7 +1184,7 @@ function closeMapping() {
 
 /* ---------- Init ---------- */
 
-const HASH_TAB = { '#post-build': 'post', '#register': 'register', '#pre-build': 'pre' };
+const HASH_TAB = { '#post-build': 'post', '#register': 'post', '#pre-build': 'pre' };
 
 window.addEventListener('DOMContentLoaded', () => {
   dgRender();
