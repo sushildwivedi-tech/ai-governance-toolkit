@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime
 from types import SimpleNamespace
 
 import pytest
@@ -19,14 +18,15 @@ from governance_toolkit.scorer.traceability import (
 
 @pytest.fixture
 def green_agent_data():
-    """Accountable owner + unique identity + full logging → green."""
+    """Accountable owner + unique identity + full logging → green traceability."""
     return {
         "name": "Support Copilot",
+        "framework": "anthropic_claude",
         "description": "Drafts support replies.",
         "vendor": "Copilot",
         "environment": "prod",
         "status": "active",
-        "owner_name": "Priya Nair",
+        "owner": "Priya Nair",
         "owner_role": "Head of CX",
         "owner_contact": "priya@example.com",
         "has_unique_identity": True,
@@ -42,11 +42,13 @@ def green_agent_data():
 
 @pytest.fixture
 def red_agent_data():
-    """No owner + shared identity → two gaps → red."""
+    """No owner + shared identity + no logging → red traceability."""
     return {
         "name": "Shadow Bot",
+        "framework": "unknown",
         "vendor": "internal",
         "environment": "dev",
+        "status": "paused",
         "has_unique_identity": False,
         "action_logging": "no",
     }
@@ -58,98 +60,106 @@ def red_agent_data():
 
 
 def _agent(**kw):
-    base = dict(owner_name=None, has_unique_identity=False, action_logging="no")
+    base = dict(owner=None, has_unique_identity=False, action_logging="no")
     base.update(kw)
     return SimpleNamespace(**base)
 
 
 def test_traceability_green():
-    a = _agent(owner_name="Alice", has_unique_identity=True, action_logging="yes")
+    a = _agent(owner="Alice", has_unique_identity=True, action_logging="yes")
     assert traceability_status(a) == "green"
     assert traceability_gaps(a) == []
 
 
 def test_traceability_amber_one_gap():
-    a = _agent(owner_name="Alice", has_unique_identity=False, action_logging="yes")
+    a = _agent(owner="Alice", has_unique_identity=False, action_logging="yes")
     assert traceability_status(a) == "amber"
     assert traceability_gaps(a) == ["Unique identity"]
 
 
 def test_traceability_red_two_gaps():
-    a = _agent(owner_name=None, has_unique_identity=False, action_logging="yes")
+    a = _agent(owner=None, has_unique_identity=False, action_logging="yes")
     assert traceability_status(a) == "red"
     assert len(traceability_gaps(a)) == 2
 
 
 def test_traceability_partial_logging_counts_as_gap():
-    a = _agent(owner_name="Alice", has_unique_identity=True, action_logging="partial")
+    a = _agent(owner="Alice", has_unique_identity=True, action_logging="partial")
     assert trace_checks(a)["logging"] is False
     assert traceability_status(a) == "amber"
 
 
 def test_traceability_blank_owner_is_gap():
-    a = _agent(owner_name="   ", has_unique_identity=True, action_logging="yes")
+    a = _agent(owner="   ", has_unique_identity=True, action_logging="yes")
     assert traceability_status(a) == "amber"
 
 
 # --------------------------------------------------------------------------- #
-# CRUD API                                                                     #
+# Unified agent API — traceability alongside OWASP                            #
 # --------------------------------------------------------------------------- #
 
 
-def test_create_registered_agent_derives_status(test_client, green_agent_data):
-    resp = test_client.post("/api/v1/register/agents", json=green_agent_data)
+def test_create_agent_derives_traceability(test_client, green_agent_data):
+    resp = test_client.post("/api/v1/agents", json=green_agent_data)
     assert resp.status_code == 201
     body = resp.json()
-    assert body["name"] == "Support Copilot"
     assert body["traceability_status"] == "green"
     assert body["traceability_gaps"] == []
-    assert "agent_id" in body
+    # Still carries an OWASP score.
+    assert "governance_score" in body
 
 
 def test_create_red_agent(test_client, red_agent_data):
-    resp = test_client.post("/api/v1/register/agents", json=red_agent_data)
+    resp = test_client.post("/api/v1/agents", json=red_agent_data)
     assert resp.status_code == 201
     assert resp.json()["traceability_status"] == "red"
 
 
-def test_create_duplicate_conflicts(test_client, green_agent_data):
-    test_client.post("/api/v1/register/agents", json=green_agent_data)
-    resp = test_client.post("/api/v1/register/agents", json=green_agent_data)
-    assert resp.status_code == 409
+def test_create_agent_without_framework_defaults_unknown(test_client):
+    resp = test_client.post("/api/v1/agents", json={"name": "Ownerless", "owner": "Jo"})
+    assert resp.status_code == 201
+    assert resp.json()["framework"] == "unknown"
 
 
-def test_list_registered_agents_empty(test_client):
-    resp = test_client.get("/api/v1/register/agents")
-    assert resp.status_code == 200
-    assert resp.json() == []
+def test_get_agent_includes_traceability(test_client, green_agent_data):
+    aid = test_client.post("/api/v1/agents", json=green_agent_data).json()["agent_id"]
+    body = test_client.get(f"/api/v1/agents/{aid}").json()
+    assert body["traceability_status"] == "green"
+    assert body["owner_role"] == "Head of CX"
 
 
-def test_get_registered_agent(test_client, green_agent_data):
-    aid = test_client.post("/api/v1/register/agents", json=green_agent_data).json()["agent_id"]
-    resp = test_client.get(f"/api/v1/register/agents/{aid}")
-    assert resp.status_code == 200
-    assert resp.json()["name"] == "Support Copilot"
+def test_audit_notes_round_trip(test_client, green_agent_data):
+    """audit_notes is a JSON column — timestamps must survive create + patch."""
+    data = dict(green_agent_data)
+    data["audit_notes"] = [{"timestamp": "2026-07-18T00:00:00", "note": "created"}]
+    r = test_client.post("/api/v1/agents", json=data)
+    assert r.status_code == 201
+    aid = r.json()["agent_id"]
+    assert len(r.json()["audit_notes"]) == 1
 
-
-def test_get_registered_agent_not_found(test_client):
-    assert test_client.get("/api/v1/register/agents/nope").status_code == 404
+    r2 = test_client.patch(f"/api/v1/agents/{aid}", json={
+        "action_logging": "no",
+        "deployment_date": "2025-11-03T00:00:00",
+        "audit_notes": [
+            {"timestamp": "2026-07-18T00:00:00", "note": "created"},
+            {"timestamp": "2026-07-19T00:00:00", "note": "logging paused"},
+        ],
+    })
+    assert r2.status_code == 200
+    assert r2.json()["action_logging"] == "no"
+    assert len(r2.json()["audit_notes"]) == 2
+    # persisted across a fresh read
+    assert test_client.get(f"/api/v1/agents/{aid}").json()["action_logging"] == "no"
 
 
 def test_patch_recomputes_traceability(test_client, red_agent_data):
-    aid = test_client.post("/api/v1/register/agents", json=red_agent_data).json()["agent_id"]
+    aid = test_client.post("/api/v1/agents", json=red_agent_data).json()["agent_id"]
     resp = test_client.patch(
-        f"/api/v1/register/agents/{aid}",
-        json={"owner_name": "Sam", "has_unique_identity": True, "action_logging": "yes"},
+        f"/api/v1/agents/{aid}",
+        json={"owner": "Sam", "has_unique_identity": True, "action_logging": "yes"},
     )
     assert resp.status_code == 200
     assert resp.json()["traceability_status"] == "green"
-
-
-def test_delete_registered_agent(test_client, green_agent_data):
-    aid = test_client.post("/api/v1/register/agents", json=green_agent_data).json()["agent_id"]
-    assert test_client.delete(f"/api/v1/register/agents/{aid}").status_code == 204
-    assert test_client.get(f"/api/v1/register/agents/{aid}").status_code == 404
 
 
 # --------------------------------------------------------------------------- #
@@ -157,14 +167,14 @@ def test_delete_registered_agent(test_client, green_agent_data):
 # --------------------------------------------------------------------------- #
 
 
-def test_filters(test_client, green_agent_data, red_agent_data):
-    test_client.post("/api/v1/register/agents", json=green_agent_data)
-    test_client.post("/api/v1/register/agents", json=red_agent_data)
+def test_new_filters(test_client, green_agent_data, red_agent_data):
+    test_client.post("/api/v1/agents", json=green_agent_data)
+    test_client.post("/api/v1/agents", json=red_agent_data)
 
-    assert len(test_client.get("/api/v1/register/agents?environment=prod").json()) == 1
-    assert len(test_client.get("/api/v1/register/agents?traceability=red").json()) == 1
-    assert len(test_client.get("/api/v1/register/agents?risk_tier=medium").json()) == 1
-    assert len(test_client.get("/api/v1/register/agents?owner=Priya Nair").json()) == 1
+    assert len(test_client.get("/api/v1/agents?environment=prod").json()) == 1
+    assert len(test_client.get("/api/v1/agents?traceability=red").json()) == 1
+    assert len(test_client.get("/api/v1/agents?risk_tier=medium").json()) == 1
+    assert len(test_client.get("/api/v1/agents?status=active").json()) == 1
 
 
 # --------------------------------------------------------------------------- #
@@ -172,38 +182,34 @@ def test_filters(test_client, green_agent_data, red_agent_data):
 # --------------------------------------------------------------------------- #
 
 
-def test_summary_empty(test_client):
-    body = test_client.get("/api/v1/register/summary").json()
-    assert body["total"] == 0
-    assert body["red_count"] == 0
-
-
-def test_summary_percentages(test_client, green_agent_data, red_agent_data):
-    test_client.post("/api/v1/register/agents", json=green_agent_data)
-    test_client.post("/api/v1/register/agents", json=red_agent_data)
-    body = test_client.get("/api/v1/register/summary").json()
+def test_summary_includes_traceability(test_client, green_agent_data, red_agent_data):
+    test_client.post("/api/v1/agents", json=green_agent_data)
+    test_client.post("/api/v1/agents", json=red_agent_data)
+    body = test_client.get("/api/v1/summary").json()
     assert body["total"] == 2
-    assert body["pct_with_owner"] == 50.0
-    assert body["pct_with_identity"] == 50.0
-    assert body["pct_with_logging"] == 50.0
-    assert body["red_count"] == 1
-    assert body["green_count"] == 1
+    t = body["traceability"]
+    assert t["pct_with_owner"] == 50.0
+    assert t["pct_with_identity"] == 50.0
+    assert t["pct_with_logging"] == 50.0
+    assert t["red_count"] == 1
+    assert t["green_count"] == 1
 
 
 def test_csv_export(test_client, green_agent_data):
-    test_client.post("/api/v1/register/agents", json=green_agent_data)
-    resp = test_client.get("/api/v1/register/export.csv")
+    test_client.post("/api/v1/agents", json=green_agent_data)
+    resp = test_client.get("/api/v1/export.csv")
     assert resp.status_code == 200
     assert resp.headers["content-type"].startswith("text/csv")
     lines = resp.text.strip().splitlines()
     assert lines[0].startswith("agent_id,name")
-    assert "Support Copilot" in lines[1]
+    assert "governance_score" in lines[0]
     assert "traceability_status" in lines[0]
+    assert "Support Copilot" in lines[1]
 
 
 def test_csv_never_exposes_credential_columns(test_client, green_agent_data):
-    test_client.post("/api/v1/register/agents", json=green_agent_data)
-    header = test_client.get("/api/v1/register/export.csv").text.splitlines()[0].lower()
+    test_client.post("/api/v1/agents", json=green_agent_data)
+    header = test_client.get("/api/v1/export.csv").text.splitlines()[0].lower()
     for banned in ("secret", "token", "password", "api_key", "apikey"):
         assert banned not in header
 
@@ -220,10 +226,13 @@ def test_seed_inserts_demo_agents(test_client):
     inserted = seed_register(next(get_db()))
     assert inserted >= 8
 
-    agents = test_client.get("/api/v1/register/agents").json()
+    agents = test_client.get("/api/v1/agents?limit=500").json()
     statuses = [a["traceability_status"] for a in agents]
     assert statuses.count("red") >= 2
     assert statuses.count("amber") >= 3
+    # Unified: seed agents also carry OWASP scores.
+    assert any(a["governance_score"] >= 80 for a in agents)
+    assert any(a["governance_score"] == 0 for a in agents)
 
 
 def test_seed_is_idempotent(test_client):
@@ -238,10 +247,9 @@ def test_seed_is_idempotent(test_client):
 
 
 def test_seed_stores_no_credential_values():
-    """Descriptive metadata only — no field should carry a secret-like value."""
+    """Descriptive metadata only — no field named like a credential store."""
     from governance_toolkit.registry.seed import DEMO_AGENTS
 
     banned_keys = {"secret", "token", "password", "api_key", "apikey", "credential"}
     for spec in DEMO_AGENTS:
-        # No key literally named like a credential store.
         assert not (set(spec.keys()) & banned_keys)

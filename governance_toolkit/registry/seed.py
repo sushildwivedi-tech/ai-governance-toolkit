@@ -1,17 +1,20 @@
 from __future__ import annotations
 
-"""Demo seed data for the Agent Register.
+"""Demo seed data for the unified agent registry.
 
-Ten realistic deployed agents spread across statuses, environments and vendors,
-including at least two red- and three amber-traceability agents, so the
-dashboard demonstrates well on first load. Metadata only — nothing here is or
-resembles a real credential, secret or token.
+Ten realistic deployed agents spread across statuses, environments, vendors and
+frameworks — including at least two red- and three amber-traceability agents,
+and a range of OWASP governance scores — so the dashboard demonstrates well on
+first load. Metadata only: nothing here is or resembles a real credential,
+secret or token.
 """
 
 import datetime
 import hashlib
 
-from .models import RegisteredAgent
+from .models import AgentRecord
+from .schemas import AgentCreate
+from ..scorer.owasp import calculate_score
 
 
 def _dt(y, m, d) -> datetime.datetime:
@@ -23,16 +26,19 @@ def _note(y, m, d, text) -> dict:
 
 
 # Each entry is metadata about a deployed agent. credential_scope is a plain
-# description of what the agent's identity is allowed to do — never a value.
+# description of what the agent's identity may do — never a value. tools /
+# data_classification / ethics fields feed the OWASP score; owner / identity /
+# action_logging feed the derived traceability status.
 DEMO_AGENTS = [
     {
         "name": "Customer Support Copilot",
+        "framework": "anthropic_claude",
         "description": "Drafts and (with approval) sends replies in the support inbox.",
         "vendor": "Copilot",
         "environment": "prod",
         "deployment_date": _dt(2025, 11, 3),
         "status": "active",
-        "owner_name": "Priya Nair",
+        "owner": "Priya Nair",
         "owner_role": "Head of Customer Experience",
         "owner_contact": "priya.nair@example.com",
         "has_unique_identity": True,
@@ -42,6 +48,10 @@ DEMO_AGENTS = [
         "autonomy_level": "act_with_approval",
         "risk_tier": "medium",
         "permitted_actions": ["read_tickets", "draft_reply", "send_reply(approved)"],
+        "tools": ["read_tickets", "draft_reply", "send_reply"],
+        "data_classification": "confidential",
+        "ethics_review_status": "passed",
+        "ethics_review_date": _dt(2026, 6, 15),
         "action_logging": "yes",
         "log_location": "Splunk — index=agents_support",
         "last_audit_review": _dt(2026, 6, 15),
@@ -49,12 +59,13 @@ DEMO_AGENTS = [
     },
     {
         "name": "Invoice Reconciliation Agent",
+        "framework": "langchain",
         "description": "Matches invoices to purchase orders and flags exceptions.",
         "vendor": "internal",
         "environment": "prod",
         "deployment_date": _dt(2025, 9, 20),
         "status": "active",
-        "owner_name": "Marcus Bell",
+        "owner": "Marcus Bell",
         "owner_role": "Finance Systems Lead",
         "owner_contact": "marcus.bell@example.com",
         "has_unique_identity": True,
@@ -64,6 +75,10 @@ DEMO_AGENTS = [
         "autonomy_level": "act_autonomously",
         "risk_tier": "high",
         "permitted_actions": ["read_invoices", "read_purchase_orders", "write_exception"],
+        "tools": ["read_invoices", "read_purchase_orders", "write_exception"],
+        "data_classification": "confidential",
+        "ethics_review_status": "passed",
+        "ethics_review_date": _dt(2026, 5, 30),
         "action_logging": "yes",
         "log_location": "ERP audit log + Datadog",
         "last_audit_review": _dt(2026, 5, 30),
@@ -71,12 +86,13 @@ DEMO_AGENTS = [
     },
     {
         "name": "Sales Email Drafter",
+        "framework": "langgraph",
         "description": "Suggests personalised outreach drafts for reps to review.",
         "vendor": "custom LangGraph",
         "environment": "prod",
         "deployment_date": _dt(2026, 1, 14),
         "status": "active",
-        "owner_name": "Elena Torres",
+        "owner": "Elena Torres",
         "owner_role": "Revenue Operations Manager",
         "owner_contact": "elena.torres@example.com",
         "has_unique_identity": True,
@@ -86,6 +102,10 @@ DEMO_AGENTS = [
         "autonomy_level": "suggest_only",
         "risk_tier": "low",
         "permitted_actions": ["read_crm_contacts", "draft_email"],
+        "tools": ["read_crm_contacts", "draft_email"],
+        "data_classification": "internal",
+        "ethics_review_status": "passed",
+        "ethics_review_date": _dt(2026, 6, 25),
         "action_logging": "yes",
         "log_location": "CloudWatch — /agents/sales-drafter",
         "last_audit_review": _dt(2026, 6, 25),
@@ -93,12 +113,13 @@ DEMO_AGENTS = [
     },
     {
         "name": "Beta Chat Widget Agent",
+        "framework": "anthropic_claude",
         "description": "Retired pilot chatbot for the marketing site.",
         "vendor": "internal",
         "environment": "dev",
         "deployment_date": _dt(2025, 6, 2),
         "status": "retired",
-        "owner_name": "Sam Okafor",
+        "owner": "Sam Okafor",
         "owner_role": "Web Platform Engineer",
         "owner_contact": "sam.okafor@example.com",
         "has_unique_identity": True,
@@ -108,6 +129,10 @@ DEMO_AGENTS = [
         "autonomy_level": "suggest_only",
         "risk_tier": "low",
         "permitted_actions": ["read_faq"],
+        "tools": ["read_faq"],
+        "data_classification": "public",
+        "ethics_review_status": "not_required",
+        "ethics_review_date": None,
         "action_logging": "yes",
         "log_location": "CloudWatch — /agents/beta-widget",
         "last_audit_review": _dt(2025, 12, 1),
@@ -115,12 +140,13 @@ DEMO_AGENTS = [
     },
     {
         "name": "Knowledge Base Summariser",
+        "framework": "langchain",
         "description": "Summarises long internal docs for the intranet.",
         "vendor": "internal",
         "environment": "staging",
         "deployment_date": _dt(2026, 2, 10),
         "status": "active",
-        "owner_name": "Hana Lindqvist",
+        "owner": "Hana Lindqvist",
         "owner_role": "Knowledge Manager",
         "owner_contact": "hana.lindqvist@example.com",
         "has_unique_identity": False,  # shares a team service account — traceability gap
@@ -130,6 +156,10 @@ DEMO_AGENTS = [
         "autonomy_level": "suggest_only",
         "risk_tier": "low",
         "permitted_actions": ["read_confluence", "summarise"],
+        "tools": ["read_confluence", "summarise"],
+        "data_classification": "internal",
+        "ethics_review_status": "pending",
+        "ethics_review_date": None,
         "action_logging": "yes",
         "log_location": "Confluence access log",
         "last_audit_review": _dt(2026, 4, 2),
@@ -137,12 +167,13 @@ DEMO_AGENTS = [
     },
     {
         "name": "Recruitment Screening Assistant",
+        "framework": "anthropic_claude",
         "description": "Pre-screens applications against role criteria.",
         "vendor": "Copilot",
         "environment": "prod",
         "deployment_date": _dt(2026, 3, 5),
         "status": "active",
-        "owner_name": "David Cho",
+        "owner": "David Cho",
         "owner_role": "Talent Acquisition Lead",
         "owner_contact": "david.cho@example.com",
         "has_unique_identity": True,
@@ -152,6 +183,10 @@ DEMO_AGENTS = [
         "autonomy_level": "act_with_approval",
         "risk_tier": "high",
         "permitted_actions": ["read_applications", "score_candidate"],
+        "tools": ["read_applications", "score_candidate"],
+        "data_classification": "restricted",
+        "ethics_review_status": "passed",
+        "ethics_review_date": _dt(2026, 4, 18),
         "action_logging": "partial",  # only errors logged — traceability gap
         "log_location": "App logs (errors only)",
         "last_audit_review": _dt(2026, 4, 18),
@@ -159,12 +194,13 @@ DEMO_AGENTS = [
     },
     {
         "name": "DevOps Incident Triage Bot",
+        "framework": "langgraph",
         "description": "Triages alerts and proposes runbook steps in the on-call channel.",
         "vendor": "custom LangGraph",
         "environment": "prod",
         "deployment_date": _dt(2025, 12, 8),
         "status": "active",
-        "owner_name": "Ravi Menon",
+        "owner": "Ravi Menon",
         "owner_role": "SRE Team Lead",
         "owner_contact": "ravi.menon@example.com",
         "has_unique_identity": True,
@@ -174,6 +210,10 @@ DEMO_AGENTS = [
         "autonomy_level": "act_with_approval",
         "risk_tier": "medium",
         "permitted_actions": ["read_alerts", "post_slack", "suggest_runbook"],
+        "tools": ["read_alerts", "post_slack", "suggest_runbook"],
+        "data_classification": "internal",
+        "ethics_review_status": "in_review",
+        "ethics_review_date": None,
         "action_logging": "no",  # not yet wired up — traceability gap
         "log_location": "",
         "last_audit_review": _dt(2026, 3, 22),
@@ -181,12 +221,13 @@ DEMO_AGENTS = [
     },
     {
         "name": "Marketing Content Generator",
+        "framework": "unknown",
         "description": "Generates campaign copy and social posts.",
         "vendor": "internal",
         "environment": "dev",
         "deployment_date": _dt(2026, 4, 28),
         "status": "active",
-        "owner_name": None,  # no accountable owner — traceability gap
+        "owner": None,  # no accountable owner — traceability gap
         "owner_role": None,
         "owner_contact": None,
         "has_unique_identity": False,  # runs under a developer's personal token
@@ -196,6 +237,10 @@ DEMO_AGENTS = [
         "autonomy_level": "act_autonomously",
         "risk_tier": "medium",
         "permitted_actions": ["generate_copy", "post_social(draft)"],
+        "tools": [],
+        "data_classification": None,
+        "ethics_review_status": None,
+        "ethics_review_date": None,
         "action_logging": "no",  # no logging — traceability gap
         "log_location": "",
         "last_audit_review": None,
@@ -203,12 +248,13 @@ DEMO_AGENTS = [
     },
     {
         "name": "Legacy Data Migration Agent",
+        "framework": "autogpt",
         "description": "One-off bulk migration between two data warehouses.",
         "vendor": "internal",
         "environment": "prod",
         "deployment_date": _dt(2025, 10, 1),
         "status": "paused",
-        "owner_name": None,  # owner left the company — traceability gap
+        "owner": None,  # owner left the company — traceability gap
         "owner_role": None,
         "owner_contact": None,
         "has_unique_identity": False,  # shared migration service account
@@ -218,6 +264,10 @@ DEMO_AGENTS = [
         "autonomy_level": "act_autonomously",
         "risk_tier": "critical",
         "permitted_actions": ["read_warehouse_a", "write_warehouse_b", "bulk_transform"],
+        "tools": ["read_warehouse_a", "write_warehouse_b", "bulk_transform"],
+        "data_classification": "restricted",
+        "ethics_review_status": "failed",
+        "ethics_review_date": _dt(2025, 10, 1),
         "action_logging": "partial",
         "log_location": "Warehouse job history",
         "last_audit_review": _dt(2026, 1, 10),
@@ -225,12 +275,13 @@ DEMO_AGENTS = [
     },
     {
         "name": "Procurement Negotiation Agent",
+        "framework": "langgraph",
         "description": "Drafts supplier negotiation messages and counter-offers.",
         "vendor": "custom LangGraph",
         "environment": "staging",
         "deployment_date": _dt(2026, 5, 19),
         "status": "active",
-        "owner_name": "Ngozi Adeyemi",
+        "owner": "Ngozi Adeyemi",
         "owner_role": "Procurement Manager",
         "owner_contact": "ngozi.adeyemi@example.com",
         "has_unique_identity": False,  # shared account — traceability gap
@@ -240,6 +291,10 @@ DEMO_AGENTS = [
         "autonomy_level": "act_with_approval",
         "risk_tier": "high",
         "permitted_actions": ["read_suppliers", "draft_message", "propose_counter_offer"],
+        "tools": ["read_suppliers", "draft_message", "propose_counter_offer"],
+        "data_classification": "confidential",
+        "ethics_review_status": "pending",
+        "ethics_review_date": None,
         "action_logging": "no",  # traceability gap
         "log_location": "",
         "last_audit_review": None,
@@ -248,20 +303,31 @@ DEMO_AGENTS = [
 ]
 
 
-def _agent_id(name: str, vendor: str) -> str:
-    return hashlib.sha256(f"{name}:{vendor}".encode()).hexdigest()[:32]
+def _agent_id(name: str, framework: str) -> str:
+    return hashlib.sha256(f"{name}:{framework}".encode()).hexdigest()[:32]
 
 
 def seed_register(db, force: bool = False) -> int:
-    """Insert demo agents if the register is empty (or force=True). Returns count inserted."""
-    if not force and db.query(RegisteredAgent).count() > 0:
+    """Insert demo agents if the registry is empty (or force=True). Returns count inserted."""
+    if not force and db.query(AgentRecord).count() > 0:
         return 0
+    now = datetime.datetime.utcnow()
     inserted = 0
     for spec in DEMO_AGENTS:
-        agent_id = _agent_id(spec["name"], spec["vendor"])
-        if db.query(RegisteredAgent).filter_by(agent_id=agent_id).first():
+        agent_id = _agent_id(spec["name"], spec["framework"])
+        if db.query(AgentRecord).filter_by(agent_id=agent_id).first():
             continue
-        db.add(RegisteredAgent(agent_id=agent_id, **spec))
+        data = dict(spec)
+        # Keep the OWASP audit criterion consistent with the richer action_logging field.
+        data["audit_log_configured"] = data.get("action_logging") == "yes"
+        score = calculate_score(AgentCreate(**data))
+        db.add(AgentRecord(
+            agent_id=agent_id,
+            governance_score=score,
+            first_seen=now,
+            last_seen=now,
+            **data,
+        ))
         inserted += 1
     db.commit()
     return inserted

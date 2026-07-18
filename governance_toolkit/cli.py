@@ -306,10 +306,10 @@ def register(ctx, name, framework, owner, model, tools, data_classification,
     console.print(f"[green]Registered agent '{name}' (ID: {agent_id}, Score: {score:.0f}/100)[/green]")
 
 
-@cli.command("seed-register")
+@cli.command("seed")
 @click.pass_context
-def seed_register_cmd(ctx):
-    """Seed the Agent Register with demo agents (skips if not empty)."""
+def seed_cmd(ctx):
+    """Seed the registry with demo agents (skips if not empty)."""
     from governance_toolkit.registry.db import get_db, init_db, reset_engine
     from governance_toolkit.registry.seed import seed_register
 
@@ -318,9 +318,9 @@ def seed_register_cmd(ctx):
     db = next(get_db())
     inserted = seed_register(db)
     if inserted:
-        console.print(f"[green]Seeded {inserted} demo agent(s) into the register.[/green]")
+        console.print(f"[green]Seeded {inserted} demo agent(s) into the registry.[/green]")
     else:
-        console.print("[yellow]Register already has agents — nothing seeded.[/yellow]")
+        console.print("[yellow]Registry already has agents — nothing seeded.[/yellow]")
 
 
 @cli.command("serve")

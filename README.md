@@ -11,12 +11,12 @@ Organizations deploying AI agents have no inventory of what's running — no own
 ## Features
 
 - **Static Scanner** — scans any Python codebase and detects AI agents via AST + regex analysis
-- **Agent Registry** — SQLite-backed store with a REST API for tracking every agent across your org
+- **Agent Registry** — SQLite-backed store with a REST API for tracking every agent across your org. Each agent carries both an **OWASP governance score** and a post-deployment **accountability record** (owner, identity, audit posture), rolled up into a green/amber/red **traceability status**
 - **OWASP Scorer** — rates each agent 0–100 against 5 governance criteria with actionable remediation hints
-- **Agent Register** — a post-deployment accountability inventory: who owns each agent, whether it has its own identity, and whether its actions are logged, rolled up into a green/amber/red traceability status
-- **Web Dashboard** — browser UI to scan, view, score, and unregister agents
+- **Traceability** — derives whether each agent's actions can be traced to an accountable human, from its owner, unique identity and action logging
+- **Web Dashboard** — browser UI to scan, view, score, add/edit and remove agents
 - **Shift-Left Design Gate** — a design-kickoff risk questionnaire that scores an agent *before* it's built, not after
-- **CLI** — `scan`, `list`, `score`, `register`, `seed-register`, `serve`
+- **CLI** — `scan`, `list`, `score`, `register`, `seed`, `serve`
 
 ## Supported Frameworks
 
@@ -56,36 +56,33 @@ governance serve
 
 Run `governance serve` and open **http://127.0.0.1:8000**
 
-The dashboard has three tabs:
+The dashboard has two tabs, one for each side of the build:
 
 ### Pre-Build — Design Gate
 
 A six-question risk gate for use at **design kickoff, before an agent is built** — the scanner and registry catch agents after they exist, this catches the risk before they do. Answer questions about autonomy, tool access, data sensitivity, reversibility, memory, and runtime oversight; it scores the agent and returns a risk tier (Supervised / Semi-autonomous / Fully autonomous) with the design-time controls to build in from day one. Tiers are adapted from the OWASP GenAI Security Project's *State of Agentic AI Security and Governance* report. (`/design-gate` redirects here.)
 
-### Post-Build — Scan & Registry
-
-![Dashboard features: summary cards, scan panel, agent table, OWASP score modal]
-
-- **Summary cards** — total agents, average score, agents below 50, framework breakdown
-- **Scan panel** — enter any local path to discover agents; auto-register in one click
-- **Registry table** — all agents with color-coded scores (green ≥80 / yellow 40–79 / red <40)
-- **Score modal** — per-agent OWASP gap report with pass/fail criteria and remediation steps
-- **Unregister** — remove agents from the registry with a two-click confirm
-
-### Agent Register — Accountability
+### Post-Build — Scan, Registry & Accountability
 
 > "Can you name every agent in your organisation right now, and who each one answers to?"
 
 **Identity is the first control for agentic AI.** Only ~28% of organisations (Cloud Security Alliance) can trace an agent's action back to an accountable human — and every other control (human-in-the-loop, audit trails, evaluations) assumes you already know which agent acted and under whose authority.
 
-The Agent Register is a **post-deployment inventory** of your deployed agents. It is a **register, not an IAM system** — it stores **metadata only** and never holds credentials, secrets or tokens (only descriptive fields about them, with a note in the UI beside those fields).
+This tab is **one unified registry** of every agent you run — discovered by scanning your code, or added by hand. Each agent carries **both** an **OWASP governance score** (0–100) **and** a **traceability status** rolling up who owns it, whether it has its own identity, and whether its actions are logged. It is a **registry, not an IAM system** — it stores **metadata only** and never holds credentials, secrets or tokens (only descriptive fields about them, with a note in the UI beside those fields).
+
+- **Overview cards** — total agents, average OWASP score, % with an accountable owner, % with a unique identity, % with action logging, and the count of red-status agents
+- **Scan panel** — enter any local path to discover agents; auto-register in one click
+- **Registry table** — every agent with its traceability dot, framework, owner (agents with **no owner are flagged**), identity, OWASP score, risk tier, logging and status; filterable (environment, risk tier, traceability status, owner), sortable and searchable
+- **Add / edit** — full CRUD over each agent's basics, accountable owner, identity, autonomy & risk, OWASP data/ethics fields, and timestamped audit notes
+- **Score modal** — per-agent OWASP gap report with pass/fail criteria and remediation steps
 
 Each record captures:
 
-- **Basics** — name, description, vendor/system, environment (prod/staging/dev), deployment date, status (active/paused/retired)
-- **Accountable owner** — a named human with role and contact; agents with **no owner are flagged** in the table
+- **Basics** — name, description, framework, model, vendor/system, environment (prod/staging/dev), deployment date, status (active/paused/retired)
+- **Accountable owner** — a named human with role and contact
 - **Identity** — whether the agent has its own unique identity (vs. a shared or human account), the identity provider/type, a credential-scope summary, and the last rotation date
 - **Autonomy & risk** — autonomy level (suggest-only / act-with-approval / act-autonomously), risk tier (low/medium/high/critical), and the permitted actions/systems it can touch
+- **Data & ethics** — data classification, ethics review status/date and tools (these feed the OWASP score)
 - **Audit** — whether action logging is in place (yes/no/partial), where logs live, last review date, and timestamped audit notes
 
 **Traceability status** is **derived automatically**, never set by hand:
@@ -96,11 +93,9 @@ Each record captures:
 | 🟡 amber | One of the three missing |
 | 🔴 red | Two or more missing |
 
-The overview shows total agents, % with an accountable owner, % with a unique identity, % with action logging, and the count of red-status agents. The table is filterable (environment, risk tier, traceability status, owner), sortable and searchable.
+**Reporting:** export the full registry as **CSV**, or open a **board-ready one-page summary** as a print/PDF view. A **Governance mapping** drawer maps the registry's fields to the ASD / cyber.gov.au joint guidance, [*Careful adoption of agentic AI*](https://www.cyber.gov.au/business-government/secure-design/artificial-intelligence/careful-adoption-of-agentic-ai-services) (incremental adoption, constrained permissions, low-risk tasks, logging).
 
-**Reporting:** export the full register as **CSV**, or open a **board-ready one-page summary** as a print/PDF view. A **Governance mapping** drawer maps the register's fields to the ASD / cyber.gov.au joint guidance, [*Careful adoption of agentic AI*](https://www.cyber.gov.au/business-government/secure-design/artificial-intelligence/careful-adoption-of-agentic-ai-services) (incremental adoption, constrained permissions, low-risk tasks, logging).
-
-The register ships with **10 demo agents** (seeded on first run) so the dashboard demonstrates immediately. Reseed a fresh database at any time with `governance seed-register`.
+The registry ships with **10 demo agents** (seeded on first run) so the dashboard demonstrates immediately. Reseed a fresh database at any time with `governance seed`.
 
 ## OWASP Governance Scoring
 
@@ -130,21 +125,15 @@ Start with `governance serve`, then use the API at **http://127.0.0.1:8000/docs*
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `POST` | `/api/v1/scan` | Scan a local directory for agents |
-| `POST` | `/api/v1/agents` | Register an agent |
-| `GET` | `/api/v1/agents` | List agents (filter by framework, score, owner) |
-| `GET` | `/api/v1/agents/{id}` | Get one agent |
-| `PATCH` | `/api/v1/agents/{id}` | Update agent metadata |
-| `DELETE` | `/api/v1/agents/{id}` | Unregister an agent |
+| `POST` | `/api/v1/agents` | Register an agent (OWASP + accountability metadata) |
+| `GET` | `/api/v1/agents` | List agents (filter by framework, score, owner, environment, risk_tier, status, traceability) |
+| `GET` | `/api/v1/agents/{id}` | Get one agent (includes derived traceability status) |
+| `PATCH` | `/api/v1/agents/{id}` | Update agent metadata (OWASP score + traceability re-derived) |
+| `DELETE` | `/api/v1/agents/{id}` | Remove an agent from the registry |
 | `GET` | `/api/v1/agents/{id}/score` | Full OWASP gap report |
-| `GET` | `/api/v1/summary` | Org-wide governance summary |
+| `GET` | `/api/v1/summary` | Org-wide summary (OWASP averages + traceability rollup) |
+| `GET` | `/api/v1/export.csv` | Export the registry as CSV (OWASP + traceability columns) |
 | `GET` | `/api/v1/health` | Health check |
-| `POST` | `/api/v1/register/agents` | Add an agent to the accountability register |
-| `GET` | `/api/v1/register/agents` | List register agents (filter by environment, risk_tier, status, owner, traceability) |
-| `GET` | `/api/v1/register/agents/{id}` | Get one register agent |
-| `PATCH` | `/api/v1/register/agents/{id}` | Update a register agent (traceability re-derived) |
-| `DELETE` | `/api/v1/register/agents/{id}` | Remove an agent from the register |
-| `GET` | `/api/v1/register/summary` | Accountability/traceability summary |
-| `GET` | `/api/v1/register/export.csv` | Export the register as CSV |
 
 ## CLI Reference
 
@@ -174,8 +163,8 @@ governance register                         Manually register an agent
              --ethics-review-status <status>
              --audit-log-configured
 
-governance seed-register                    Seed the Agent Register with 10 demo agents
-                                            (skips if the register already has agents)
+governance seed                             Seed the registry with 10 demo agents
+                                            (skips if the registry already has agents)
 
 governance serve                            Start the web dashboard + API
              --host <host>                  Default: 127.0.0.1
@@ -202,7 +191,7 @@ pip install -e ".[dev]"
 pytest tests/ -v
 ```
 
-68 tests covering the scanner, OWASP scorer, traceability logic, and REST API (registry + register).
+65 tests covering the scanner, OWASP scorer, traceability logic, and the unified registry REST API.
 
 ## Project Structure
 
@@ -214,14 +203,14 @@ governance_toolkit/
 │   └── fingerprint.py  # AgentFingerprint dataclass
 ├── registry/
 │   ├── api.py          # FastAPI endpoints + web dashboard
-│   ├── models.py       # SQLAlchemy ORM (AgentRecord + RegisteredAgent)
+│   ├── models.py       # SQLAlchemy ORM (unified AgentRecord)
 │   ├── schemas.py      # Pydantic schemas
-│   ├── seed.py         # Demo seed data for the Agent Register
+│   ├── seed.py         # Demo seed data for the registry
 │   ├── db.py           # Database engine
-│   └── ui.html         # Single-page web dashboard (3 tabs)
+│   └── ui.html         # Single-page web dashboard (2 tabs)
 └── scorer/
     ├── owasp.py        # OWASP governance scoring (pure functions)
-    └── traceability.py # Agent Register traceability status (pure functions)
+    └── traceability.py # Green/amber/red traceability status (pure functions)
 ```
 
 ## License
