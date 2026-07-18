@@ -119,3 +119,147 @@ class BatchResult(BaseModel):
     success: bool
     agent: Optional[AgentResponse] = None
     error: Optional[str] = None
+
+
+# --------------------------------------------------------------------------- #
+# Agent Register (post-deployment accountability). Metadata only — never       #
+# stores credentials, secrets or tokens.                                       #
+# --------------------------------------------------------------------------- #
+
+
+class Environment(str, Enum):
+    prod = "prod"
+    staging = "staging"
+    dev = "dev"
+
+
+class AgentStatus(str, Enum):
+    active = "active"
+    paused = "paused"
+    retired = "retired"
+
+
+class AutonomyLevel(str, Enum):
+    suggest_only = "suggest_only"
+    act_with_approval = "act_with_approval"
+    act_autonomously = "act_autonomously"
+
+
+class ActionLogging(str, Enum):
+    yes = "yes"
+    no = "no"
+    partial = "partial"
+
+
+class AuditNote(BaseModel):
+    timestamp: datetime.datetime
+    note: str
+
+
+class RegisteredAgentCreate(BaseModel):
+    agent_id: Optional[str] = None
+    name: str
+    description: Optional[str] = None
+    vendor: Optional[str] = None
+    environment: Optional[Environment] = None
+    deployment_date: Optional[datetime.datetime] = None
+    status: AgentStatus = AgentStatus.active
+
+    owner_name: Optional[str] = None
+    owner_role: Optional[str] = None
+    owner_contact: Optional[str] = None
+
+    has_unique_identity: bool = False
+    identity_provider: Optional[str] = None
+    credential_scope: Optional[str] = None
+    last_credential_rotation: Optional[datetime.datetime] = None
+
+    autonomy_level: Optional[AutonomyLevel] = None
+    risk_tier: Optional[RiskTier] = None
+    permitted_actions: Optional[List[str]] = None
+
+    action_logging: ActionLogging = ActionLogging.no
+    log_location: Optional[str] = None
+    last_audit_review: Optional[datetime.datetime] = None
+    audit_notes: Optional[List[AuditNote]] = None
+
+    class Config:
+        orm_mode = True
+
+
+class RegisteredAgentUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    vendor: Optional[str] = None
+    environment: Optional[Environment] = None
+    deployment_date: Optional[datetime.datetime] = None
+    status: Optional[AgentStatus] = None
+
+    owner_name: Optional[str] = None
+    owner_role: Optional[str] = None
+    owner_contact: Optional[str] = None
+
+    has_unique_identity: Optional[bool] = None
+    identity_provider: Optional[str] = None
+    credential_scope: Optional[str] = None
+    last_credential_rotation: Optional[datetime.datetime] = None
+
+    autonomy_level: Optional[AutonomyLevel] = None
+    risk_tier: Optional[RiskTier] = None
+    permitted_actions: Optional[List[str]] = None
+
+    action_logging: Optional[ActionLogging] = None
+    log_location: Optional[str] = None
+    last_audit_review: Optional[datetime.datetime] = None
+    audit_notes: Optional[List[AuditNote]] = None
+
+    class Config:
+        orm_mode = True
+
+
+class RegisteredAgentResponse(BaseModel):
+    agent_id: str
+    name: str
+    description: Optional[str] = None
+    vendor: Optional[str] = None
+    environment: Optional[str] = None
+    deployment_date: Optional[datetime.datetime] = None
+    status: str = "active"
+
+    owner_name: Optional[str] = None
+    owner_role: Optional[str] = None
+    owner_contact: Optional[str] = None
+
+    has_unique_identity: bool = False
+    identity_provider: Optional[str] = None
+    credential_scope: Optional[str] = None
+    last_credential_rotation: Optional[datetime.datetime] = None
+
+    autonomy_level: Optional[str] = None
+    risk_tier: Optional[str] = None
+    permitted_actions: Optional[List[str]] = None
+
+    action_logging: str = "no"
+    log_location: Optional[str] = None
+    last_audit_review: Optional[datetime.datetime] = None
+    audit_notes: Optional[List[AuditNote]] = None
+
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+
+    # Derived server-side, never set manually.
+    traceability_status: str = "red"
+    traceability_gaps: List[str] = []
+
+    class Config:
+        orm_mode = True
+
+
+class RegisterSummary(BaseModel):
+    total: int
+    pct_with_owner: float
+    pct_with_identity: float
+    pct_with_logging: float
+    red_count: int
+    amber_count: int
+    green_count: int
