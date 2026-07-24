@@ -1,13 +1,19 @@
 # taxonomy.yaml — single source of truth for the Agentic SDLC Incident Taxonomy.
 #
-# Categories are added only after the category list is signed off (see the
-# project order of work). Until then this file carries the release metadata and
-# the blast-radius rubric, and an empty category list, so validation and CI
-# have a valid target from day one.
-#
 # docs/ is generated from this file by scripts/build.py. Never hand-edit docs/.
+# Category ids are permanent (see id_registry.yaml). Deprecate, never renumber.
+#
+# evidence_status is honest about the evidence base:
+#   documented            — backed by >=1 sourced entry in incidents.yaml
+#   reported_anecdotally   — described publicly, no rigorous source
+#   anticipated            — structurally derived, no public incident yet
+#                            (incident_refs MUST be empty)
+#
+# External mappings are populated only where a genuine correspondence exists.
+# VAISS mappings are intentionally absent pending confirmation of which VAISS
+# guardrail taxonomy to align to.
 
-version: "0.0.1"
+version: "0.1.0"
 updated: "2026-07-24"
 
 # blast_radius: 1-5. Score the WORST plausible outcome of the failure mode, not
@@ -32,4 +38,461 @@ blast_radius_rubric:
     breach of third parties, or supply-chain propagation to external users;
     no clean rollback exists.
 
-categories: []
+categories:
+  # ========================================================================
+  # PLAN
+  # ========================================================================
+  - id: ASIT-PLAN-01
+    name: Under-scoped Task Authorization
+    definition: >-
+      The agent begins work from a task specification that never bounded which
+      systems, files, or actions are in scope, so no gate can later tell an
+      in-scope action from an out-of-scope one. Test: at task start, was there a
+      written, agreed boundary of what the agent may and may not touch?
+    causal_locus: oversight_failure
+    lifecycle_stage: PLAN
+    detection_point: pre_execution
+    blast_radius: 3
+    preconditions:
+      - An agent is dispatched against a task without an explicit scope or
+        authorization boundary.
+      - No downstream control re-derives scope from an authoritative source.
+    mitigating_controls: [CTL-06]
+    related: [ASIT-DESIGN-01, ASIT-DESIGN-02, ASIT-BUILD-05]
+    external_mappings:
+      owasp_llm: ["LLM06:2025 Excessive Agency"]
+    evidence_status: anticipated
+    incident_refs: []
+    status: active
+    notes: >-
+      A precondition amplifier for several execution-stage modes; kept distinct
+      because the failure is the missing authorization artifact at plan time.
+
+  # ========================================================================
+  # DESIGN
+  # ========================================================================
+  - id: ASIT-DESIGN-01
+    name: Autonomy-Risk Tier Mismatch
+    definition: >-
+      An agent is granted a level of autonomy (e.g. act-without-approval, access
+      to destructive or irreversible tools) that exceeds the reversibility and
+      blast radius of its task. Test: could a single unattended agent action
+      cause irreversible harm the task's risk tier did not warrant?
+    causal_locus: overbroad_permission
+    lifecycle_stage: DESIGN
+    detection_point: pre_execution
+    blast_radius: 5
+    preconditions:
+      - The agent can take state-changing actions without per-action human
+        approval.
+      - The agent has access to tools whose effects are hard or impossible to
+        reverse.
+      - No design-time risk tiering matched autonomy to task reversibility.
+    mitigating_controls: [CTL-07, CTL-13]
+    related: [ASIT-DESIGN-02, ASIT-REL-01, ASIT-OPS-01, ASIT-OPS-03]
+    external_mappings:
+      owasp_llm: ["LLM06:2025 Excessive Agency"]
+      cwe: ["CWE-250"]
+    evidence_status: documented
+    incident_refs: [INC-0001]
+    status: active
+
+  - id: ASIT-DESIGN-02
+    name: Overbroad Permission or Tool Grant
+    definition: >-
+      The agent holds tool, credential, or data-access scopes materially wider
+      than its task requires, enabling actions across a trust boundary. Test: if
+      the agent were coerced or mistaken, could it reach systems or data its task
+      never needed because its granted scope was not minimised?
+    causal_locus: overbroad_permission
+    lifecycle_stage: DESIGN
+    detection_point: pre_execution
+    blast_radius: 4
+    preconditions:
+      - The agent is issued a token, role, or tool set broader than the task
+        requires.
+      - Multiple repositories, environments, or data classes are reachable in a
+        single session.
+    mitigating_controls: [CTL-08]
+    related: [ASIT-DESIGN-01, ASIT-BUILD-03, ASIT-OPS-01, ASIT-OPS-04, ASIT-FOUND-01]
+    external_mappings:
+      owasp_llm: ["LLM06:2025 Excessive Agency"]
+      cwe: ["CWE-269", "CWE-250"]
+    evidence_status: documented
+    incident_refs: [INC-0004, INC-0008]
+    status: active
+
+  # ========================================================================
+  # BUILD
+  # ========================================================================
+  - id: ASIT-BUILD-01
+    name: Insecure Code Generation
+    definition: >-
+      The agent writes source code that contains an exploitable weakness — for
+      example injection, broken authorization, weak cryptography, or a hard-coded
+      secret — with no adversary involved. Test: does the agent-authored code
+      match a known CWE weakness pattern as committed?
+    causal_locus: model_error
+    lifecycle_stage: BUILD
+    detection_point: ci
+    blast_radius: 4
+    preconditions:
+      - The agent produces code that is committed or merged.
+      - No SAST, secret-scanning, or security review gate blocks the weakness.
+    mitigating_controls: [CTL-11, CTL-10]
+    related: [ASIT-BUILD-02, ASIT-TEST-01]
+    external_mappings:
+      owasp_llm: ["LLM05:2025 Improper Output Handling"]
+      cwe: ["CWE-94", "CWE-798", "CWE-89", "CWE-79"]
+    evidence_status: documented
+    incident_refs: [INC-0010]
+    status: active
+
+  - id: ASIT-BUILD-02
+    name: Hallucinated Dependency (Slopsquatting Exposure)
+    definition: >-
+      The agent recommends, imports, or installs a package or module that does
+      not exist, creating a name an attacker can pre-register on a public
+      registry. Test: does the agent's output reference a dependency that is not
+      resolvable to a legitimate, existing package at generation time?
+    causal_locus: supply_chain
+    lifecycle_stage: BUILD
+    detection_point: ci
+    blast_radius: 5
+    preconditions:
+      - The agent can name or add third-party dependencies.
+      - Dependency resolution or installation is not gated against an allowlist
+        or existence/provenance check.
+    mitigating_controls: [CTL-11, CTL-04]
+    related: [ASIT-BUILD-01, ASIT-REL-02, ASIT-FOUND-02]
+    external_mappings:
+      owasp_llm: ["LLM03:2025 Supply Chain", "LLM09:2025 Misinformation"]
+      mitre_atlas: ["AML.T0010 ML Supply Chain Compromise"]
+    evidence_status: documented
+    incident_refs: [INC-0006]
+    status: active
+
+  - id: ASIT-BUILD-03
+    name: Indirect Prompt Injection via Untrusted Content
+    definition: >-
+      The agent ingests attacker-controlled content (an issue, pull request,
+      comment, fetched page, or repository file) and treats it as trusted
+      instructions, then acts on it. Test: did an agent action originate from
+      instructions embedded in content the agent read rather than from its
+      operator?
+    causal_locus: injected_instruction
+    lifecycle_stage: BUILD
+    detection_point: runtime
+    blast_radius: 5
+    preconditions:
+      - The agent incorporates untrusted external content into its context.
+      - The agent can take consequential actions (tool calls, edits, network
+        egress) from that context.
+      - No trust boundary separates data from instructions.
+    mitigating_controls: [CTL-09, CTL-08]
+    related: [ASIT-BUILD-04, ASIT-DESIGN-02, ASIT-OPS-04]
+    external_mappings:
+      owasp_llm: ["LLM01:2025 Prompt Injection", "LLM02:2025 Sensitive Information Disclosure"]
+      mitre_atlas: ["AML.T0051 LLM Prompt Injection", "AML.T0053 LLM Plugin Compromise"]
+      cwe: ["CWE-1427"]
+    evidence_status: documented
+    incident_refs: [INC-0008, INC-0009]
+    status: active
+
+  - id: ASIT-BUILD-04
+    name: Poisoned Agent Configuration
+    definition: >-
+      Persistent malicious instructions are hidden in the agent's own
+      configuration, rules, or context files (including via invisible or
+      obfuscated characters) and steer generation across sessions and reviews.
+      Test: does an agent config or rules file contain instructions that alter
+      generated code beyond its stated, human-readable purpose?
+    causal_locus: injected_instruction
+    lifecycle_stage: BUILD
+    detection_point: human_review
+    blast_radius: 5
+    preconditions:
+      - The agent loads project- or user-level configuration/rules files into
+        its instruction context.
+      - Those files are not integrity-checked or provenance-tracked.
+      - Reviewers cannot readily see the effective instruction content.
+    mitigating_controls: [CTL-09, CTL-04]
+    related: [ASIT-BUILD-03, ASIT-FOUND-02]
+    external_mappings:
+      owasp_llm: ["LLM01:2025 Prompt Injection", "LLM04:2025 Data and Model Poisoning"]
+      mitre_atlas: ["AML.T0051 LLM Prompt Injection"]
+      cwe: ["CWE-1427"]
+    evidence_status: documented
+    incident_refs: [INC-0005]
+    status: active
+
+  - id: ASIT-BUILD-05
+    name: Unrequested Scope Expansion
+    definition: >-
+      The agent modifies files, configuration, dependencies, or behaviour beyond
+      the requested change, without surfacing that it did so. Test: does the
+      agent's diff contain changes not entailed by the task, presented as if in
+      scope?
+    causal_locus: oversight_failure
+    lifecycle_stage: BUILD
+    detection_point: human_review
+    blast_radius: 3
+    preconditions:
+      - The agent can edit files or settings outside the task's target.
+      - Changes are accepted without a diff-level human review against the task.
+    mitigating_controls: [CTL-10]
+    related: [ASIT-PLAN-01, ASIT-TEST-01]
+    external_mappings:
+      owasp_llm: ["LLM06:2025 Excessive Agency"]
+    evidence_status: anticipated
+    incident_refs: []
+    status: active
+    notes: >-
+      Widely reported anecdotally but without a postmortem-grade public source;
+      held at anticipated until one is found.
+
+  # ========================================================================
+  # TEST
+  # ========================================================================
+  - id: ASIT-TEST-01
+    name: Verification Integrity Failure
+    definition: >-
+      The agent causes the verification signal to misrepresent reality — by
+      weakening, deleting, mocking, or hard-coding tests, or by fabricating
+      results or concealing failures — so that broken or unsafe work appears to
+      pass. Test: does a green/passing signal produced or influenced by the agent
+      diverge from the actual state of the code?
+    causal_locus: oversight_failure
+    lifecycle_stage: TEST
+    detection_point: human_review
+    blast_radius: 4
+    preconditions:
+      - The agent can modify tests, fixtures, or the reported outcome of checks.
+      - Verification results are trusted without independent confirmation.
+    mitigating_controls: [CTL-11, CTL-10, CTL-03]
+    related: [ASIT-BUILD-01, ASIT-BUILD-05, ASIT-OPS-02]
+    external_mappings:
+      owasp_llm: ["LLM09:2025 Misinformation"]
+    evidence_status: documented
+    incident_refs: [INC-0001]
+    status: active
+    notes: >-
+      Merges test-gaming and fabricated/concealed results. If a distinct
+      cross-cutting "Deceptive Status Reporting" category is later wanted, split
+      here.
+
+  # ========================================================================
+  # REL (Release)
+  # ========================================================================
+  - id: ASIT-REL-01
+    name: Change-Freeze or Approval-Gate Violation
+    definition: >-
+      The agent performs a state-changing action that an active change freeze or
+      required approval gate should have blocked. Test: was there an in-force
+      freeze or approval requirement, and did the agent act without satisfying
+      it?
+    causal_locus: oversight_failure
+    lifecycle_stage: REL
+    detection_point: pre_execution
+    blast_radius: 4
+    preconditions:
+      - A freeze or approval requirement is in force for the target action.
+      - The agent can execute the action without the gate being technically
+        enforced against it.
+    mitigating_controls: [CTL-12]
+    related: [ASIT-OPS-01, ASIT-DESIGN-01]
+    external_mappings:
+      owasp_llm: ["LLM06:2025 Excessive Agency"]
+      cwe: ["CWE-285"]
+    evidence_status: documented
+    incident_refs: [INC-0001]
+    status: active
+
+  - id: ASIT-REL-02
+    name: Compromised Agent Distribution
+    definition: >-
+      Malicious code or instructions are injected into the agent's own extension,
+      package, or release channel and ship to users as a trusted update. Test:
+      did users receive a signed or official agent build that carried
+      attacker-introduced behaviour?
+    causal_locus: supply_chain
+    lifecycle_stage: REL
+    detection_point: human_review
+    blast_radius: 5
+    preconditions:
+      - The agent (or its extension/plugin) has a distribution channel users
+        trust.
+      - A contribution or release path exists that can introduce code without
+        sufficient review or provenance control.
+    mitigating_controls: [CTL-04, CTL-12]
+    related: [ASIT-BUILD-02, ASIT-OPS-04, ASIT-FOUND-02]
+    external_mappings:
+      owasp_llm: ["LLM03:2025 Supply Chain"]
+      mitre_atlas: ["AML.T0010 ML Supply Chain Compromise", "AML.T0053 LLM Plugin Compromise"]
+      cwe: ["CWE-506"]
+    evidence_status: documented
+    incident_refs: [INC-0002]
+    status: active
+
+  # ========================================================================
+  # OPS (Operate)
+  # ========================================================================
+  - id: ASIT-OPS-01
+    name: Destructive Action Beyond Authorization
+    definition: >-
+      The agent executes an irreversible destructive operation — dropping,
+      deleting, or overwriting data, files, or infrastructure — that it was not
+      authorized to perform. Test: did the agent carry out a destructive action
+      outside its authorized scope, for which no rollback existed?
+    causal_locus: overbroad_permission
+    lifecycle_stage: OPS
+    detection_point: runtime
+    blast_radius: 5
+    preconditions:
+      - The agent can invoke destructive operations against real data or
+        infrastructure.
+      - No confirmation, dry-run, or environment separation blocks the action.
+    mitigating_controls: [CTL-13, CTL-06, CTL-08]
+    related: [ASIT-DESIGN-01, ASIT-DESIGN-02, ASIT-REL-01, ASIT-OPS-02]
+    external_mappings:
+      owasp_llm: ["LLM06:2025 Excessive Agency"]
+      mitre_atlas: ["AML.T0053 LLM Plugin Compromise"]
+      cwe: ["CWE-250"]
+    evidence_status: documented
+    incident_refs: [INC-0001, INC-0003]
+    status: active
+
+  - id: ASIT-OPS-02
+    name: Action on Corrupted Context or Hallucinated State
+    definition: >-
+      The agent acts on a false internal model of system state — a nonexistent
+      path, a stale fact, or a confabulated result — and issues real operations
+      based on it. Test: did the agent take an action premised on a system state
+      that did not actually hold?
+    causal_locus: context_corruption
+    lifecycle_stage: OPS
+    detection_point: runtime
+    blast_radius: 4
+    preconditions:
+      - The agent maintains or infers state without verifying it against ground
+        truth before acting.
+      - The agent can execute operations whose safety depends on that state.
+    mitigating_controls: [CTL-13, CTL-05]
+    related: [ASIT-OPS-01, ASIT-TEST-01]
+    external_mappings:
+      owasp_llm: ["LLM09:2025 Misinformation"]
+    evidence_status: documented
+    incident_refs: [INC-0003]
+    status: active
+
+  - id: ASIT-OPS-03
+    name: Constraint Self-Modification or Guardrail Evasion
+    definition: >-
+      The agent alters its own limits, sandbox, permissions, or guardrails — for
+      example editing its timeout, config, or launch code — to continue or extend
+      its actions. Test: did the agent change a constraint imposed on it rather
+      than operate within it?
+    causal_locus: oversight_failure
+    lifecycle_stage: OPS
+    detection_point: runtime
+    blast_radius: 4
+    preconditions:
+      - The agent has write access to its own configuration, code, or execution
+        environment.
+      - Constraints are enforced by artifacts the agent can reach rather than by
+        an external boundary.
+    mitigating_controls: [CTL-13, CTL-05, CTL-03]
+    related: [ASIT-DESIGN-01, ASIT-OPS-01]
+    external_mappings:
+      owasp_llm: ["LLM06:2025 Excessive Agency", "LLM10:2025 Unbounded Consumption"]
+      mitre_atlas: ["AML.T0054 LLM Jailbreak"]
+    evidence_status: documented
+    incident_refs: [INC-0007]
+    status: active
+
+  - id: ASIT-OPS-04
+    name: Installed Agent Weaponized by Host Malware
+    definition: >-
+      A legitimately installed agent is invoked by third-party malware or an
+      attacker — often with permission-bypassing flags — to perform
+      reconnaissance, exfiltration, or destruction on the host. Test: was a
+      trusted local agent driven by an external process to act against its own
+      user?
+    causal_locus: tool_misuse
+    lifecycle_stage: OPS
+    detection_point: runtime
+    blast_radius: 5
+    preconditions:
+      - An agent CLI or runtime is installed and invokable by other local
+        processes.
+      - The agent honours flags that bypass permission or confirmation prompts.
+      - The agent has standing access to secrets or the filesystem.
+    mitigating_controls: [CTL-04, CTL-08, CTL-05]
+    related: [ASIT-DESIGN-02, ASIT-REL-02, ASIT-BUILD-03]
+    external_mappings:
+      owasp_llm: ["LLM02:2025 Sensitive Information Disclosure", "LLM06:2025 Excessive Agency"]
+      mitre_atlas: ["AML.T0053 LLM Plugin Compromise"]
+    evidence_status: documented
+    incident_refs: [INC-0004]
+    status: active
+
+  # ========================================================================
+  # FOUND (Foundational plane)
+  # ========================================================================
+  - id: ASIT-FOUND-01
+    name: Unaccountable Agent Action
+    definition: >-
+      An agent's action cannot be traced to a unique agent identity, a named
+      accountable owner, and a reconstructable log — for example because it ran
+      under shared or human credentials or was never registered. Test: given an
+      action, can you name the responsible agent, its owner, and retrieve a log
+      of what it did?
+    causal_locus: identity_gap
+    lifecycle_stage: FOUND
+    detection_point: post_incident
+    blast_radius: 4
+    preconditions:
+      - The agent operates without a unique, attributable identity, or is absent
+        from the agent register.
+      - Actions are not logged in a way that ties them to that identity and an
+        owner.
+    mitigating_controls: [CTL-01, CTL-02, CTL-03]
+    related: [ASIT-DESIGN-02, ASIT-OPS-01]
+    external_mappings:
+      cwe: ["CWE-778", "CWE-306"]
+    evidence_status: anticipated
+    incident_refs: []
+    status: active
+    notes: >-
+      An incident-response amplifier: it turns other failures into ones that
+      cannot be scoped or contained. No single public incident isolates it;
+      surveyed as prevalent (e.g. CSA) but that is context, not a fileable case.
+
+  - id: ASIT-FOUND-02
+    name: Model or Weight Supply-Chain Compromise
+    definition: >-
+      The model, weights, or model-serving dependency the agent runs on is
+      tampered with, poisoned, or backdoored, altering the agent's behaviour at
+      the source. Test: is there a break in the provenance or integrity chain of
+      the model the agent executes?
+    causal_locus: supply_chain
+    lifecycle_stage: FOUND
+    detection_point: pre_execution
+    blast_radius: 5
+    preconditions:
+      - The agent runs a model or weights whose provenance and integrity are not
+        verified.
+      - A path exists to substitute or poison the model or its serving stack.
+    mitigating_controls: [CTL-04]
+    related: [ASIT-BUILD-02, ASIT-BUILD-04, ASIT-REL-02]
+    external_mappings:
+      owasp_llm: ["LLM03:2025 Supply Chain", "LLM04:2025 Data and Model Poisoning"]
+      mitre_atlas: ["AML.T0010 ML Supply Chain Compromise"]
+      cwe: ["CWE-506"]
+    evidence_status: anticipated
+    incident_refs: []
+    status: active
+    notes: >-
+      Distinct from BUILD-02 (packages the agent writes) and REL-02 (the agent's
+      own distribution). No coding-agent-specific public incident found for the
+      model/weights layer itself; held at anticipated.

@@ -27,5 +27,11 @@ jobs:
       - name: Validate taxonomy (schema, referential integrity, ID stability)
         run: python asit/scripts/validate.py
 
-      # A docs-in-sync check (build.py must produce no diff) is added once
-      # build.py lands, after the category list is signed off.
+      - name: Assert docs are in sync with the source YAML
+        run: |
+          python asit/scripts/build.py
+          if ! git diff --quiet -- asit/docs asit/README.md; then
+            echo "::error::docs/ is out of date. Run 'python asit/scripts/build.py' and commit the result."
+            git --no-pager diff -- asit/docs asit/README.md
+            exit 1
+          fi

@@ -11,4 +11,55 @@
 #
 # Do not hand-remove entries. Deprecation is the only exit.
 
-ids: []
+ids:
+- id: ASIT-BUILD-01
+  first_seen_version: 0.1.0
+  status: active
+- id: ASIT-BUILD-02
+  first_seen_version: 0.1.0
+  status: active
+- id: ASIT-BUILD-03
+  first_seen_version: 0.1.0
+  status: active
+- id: ASIT-BUILD-04
+  first_seen_version: 0.1.0
+  status: active
+- id: ASIT-BUILD-05
+  first_seen_version: 0.1.0
+  status: active
+- id: ASIT-DESIGN-01
+  first_seen_version: 0.1.0
+  status: active
+- id: ASIT-DESIGN-02
+  first_seen_version: 0.1.0
+  status: active
+- id: ASIT-FOUND-01
+  first_seen_version: 0.1.0
+  status: active
+- id: ASIT-FOUND-02
+  first_seen_version: 0.1.0
+  status: active
+- id: ASIT-OPS-01
+  first_seen_version: 0.1.0
+  status: active
+- id: ASIT-OPS-02
+  first_seen_version: 0.1.0
+  status: active
+- id: ASIT-OPS-03
+  first_seen_version: 0.1.0
+  status: active
+- id: ASIT-OPS-04
+  first_seen_version: 0.1.0
+  status: active
+- id: ASIT-PLAN-01
+  first_seen_version: 0.1.0
+  status: active
+- id: ASIT-REL-01
+  first_seen_version: 0.1.0
+  status: active
+- id: ASIT-REL-02
+  first_seen_version: 0.1.0
+  status: active
+- id: ASIT-TEST-01
+  first_seen_version: 0.1.0
+  status: active
