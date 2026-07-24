@@ -113,8 +113,8 @@ and these are the only places to read the taxonomy as prose (never hand-edit):
 
 ## Status
 
-Version 0.2.0 — 17 categories across the seven stages, of which 12 are
-`documented` against sourced incidents and 5 are `anticipated`, cross-referenced
+Version 0.2.0 — 17 categories across the seven stages, of which 13 are
+`documented` against sourced incidents and 4 are `anticipated`, cross-referenced
 to a 14-control governance map. Contributions follow
 [`CONTRIBUTING.md`](CONTRIBUTING.md); cite via [`CITATION.cff`](CITATION.cff).
 
