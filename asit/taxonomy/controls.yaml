@@ -1,0 +1,171 @@
+# controls.yaml — the agentic SDLC governance map that ASIT cross-references.
+#
+# The five FOUND (foundational-plane) controls are from the project brief:
+# agent identity, agent register, audit trail, model supply chain, telemetry.
+#
+# The nine stage controls (CTL-06..14, across PLAN/DESIGN/BUILD/TEST/REL/OPS)
+# were confirmed by the maintainer on 2026-07-24. They operationalise the
+# repo's Pre-Build Design Gate dimensions (autonomy, tool access, data
+# sensitivity, reversibility, memory, runtime oversight) and standard SDLC
+# gates.
+#
+# id        stable, permanent (CTL-NN). Deprecate, never renumber or reuse.
+# name      short noun phrase.
+# stage     PLAN | DESIGN | BUILD | TEST | REL | OPS | FOUND
+# summary   (foundational controls) one-line statement of the control.
+# objective (stage controls) the governance outcome the control secures.
+# requires  (stage controls) the concrete activities the control mandates.
+
+controls:
+  # --- Foundational plane (from brief) -------------------------------------
+  - id: CTL-01
+    name: Agent Identity
+    stage: FOUND
+    summary: >-
+      Every agent operates under a unique, non-human, attributable identity —
+      never a shared or borrowed human credential.
+
+  - id: CTL-02
+    name: Agent Register
+    stage: FOUND
+    summary: >-
+      A maintained inventory of every agent, its owner, and its permitted
+      actions and systems.
+
+  - id: CTL-03
+    name: Audit Trail
+    stage: FOUND
+    summary: >-
+      Tamper-evident logging of every agent action, sufficient to reconstruct
+      what an agent did and under whose authority.
+
+  - id: CTL-04
+    name: Model Supply Chain Integrity
+    stage: FOUND
+    summary: >-
+      Provenance and integrity verification of the models, weights, extensions,
+      and package dependencies an agent relies on.
+
+  - id: CTL-05
+    name: Telemetry
+    stage: FOUND
+    summary: >-
+      Runtime observability of agent behaviour, with anomaly and rate signals
+      that a human or system can act on.
+
+  # --- Stage controls (confirmed 2026-07-24) -------------------------------
+  - id: CTL-06
+    name: Task Authorization Boundary
+    stage: PLAN
+    objective: >-
+      Every agent task carries an explicit, agreed scope before execution.
+    requires:
+      - A written per-dispatch boundary covering in-scope repositories, paths,
+        and systems; the classes of action the agent may take; and explicit
+        prohibitions (e.g. no destructive operations, no production).
+      - A named human who authorised the task.
+      - The boundary is machine-readable so downstream gates can enforce it.
+
+  - id: CTL-07
+    name: Design Risk Gate
+    stage: DESIGN
+    objective: >-
+      Each agent is tiered by risk at design kickoff and assigned the controls
+      it must carry, before it is built.
+    requires:
+      - The six-dimension questionnaire (autonomy, tool access, data
+        sensitivity, reversibility, memory, runtime oversight).
+      - A resulting risk tier (Supervised / Semi-autonomous / Fully autonomous)
+        and the control set mandated for that tier.
+      - Re-assessment whenever any dimension materially changes.
+
+  - id: CTL-08
+    name: Least-Privilege Permission Design
+    stage: DESIGN
+    objective: >-
+      Tool, credential, and data-access scopes are constrained to the task
+      minimum at design time.
+    requires:
+      - Short-lived, scoped credentials rather than standing broad tokens.
+      - Per-tool allowlists and, where feasible, single-repository or
+        single-environment session boundaries.
+      - Scopes derived from the design gate's tool-access and data-sensitivity
+        answers.
+
+  - id: CTL-09
+    name: Context and Prompt Integrity
+    stage: BUILD
+    objective: >-
+      Untrusted content the agent ingests is prevented from being treated as
+      trusted instructions.
+    requires:
+      - A data/instruction trust boundary under which issues, pull requests,
+        comments, fetched pages, repository files, and rules/config files are
+        treated as untrusted data.
+      - Provenance and integrity checks on agent configuration and rules files.
+      - Detection of hidden or obfuscated characters in ingested content.
+
+  - id: CTL-10
+    name: Human-in-the-Loop Change Approval
+    stage: BUILD
+    objective: >-
+      Agent-authored changes are reviewed and approved by a human before merge,
+      scaled to the agent's risk tier.
+    requires:
+      - A mandatory review gate on agent-authored commits and pull requests.
+      - Diff-level review against the task's authorization boundary (CTL-06).
+      - Approval authority matched to the change's blast radius; no self-merge
+        by the agent above the Supervised tier.
+
+  - id: CTL-11
+    name: Automated Security and Correctness Testing
+    stage: TEST
+    objective: >-
+      Agent output is gated on automated security and correctness checks in CI.
+    requires:
+      - SAST, dependency/SCA scanning, and secret scanning as required status
+        checks on agent-authored changes.
+      - The test suite run as a required check.
+      - A dependency existence and provenance check (guards hallucinated
+        packages); check results are not overridable by the agent.
+
+  - id: CTL-12
+    name: Release Gate and Change-Freeze Enforcement
+    stage: REL
+    objective: >-
+      Environment separation, deployment approval, and freezes are enforced and
+      cannot be unilaterally overridden by the agent.
+    requires:
+      - Technically-enforced development/staging/production separation and
+        deployment approval.
+      - Change freezes enforced rather than advisory.
+      - The agent cannot promote to or deploy in production without the gate
+        being satisfied.
+
+  - id: CTL-13
+    name: Runtime Oversight and Kill Switch
+    stage: OPS
+    objective: >-
+      An agent can be observed, constrained, paused, or halted while it runs.
+    requires:
+      - Real-time action monitoring wired to telemetry (CTL-05), with rate and
+        anomaly limits.
+      - A human-invokable kill switch that halts in-flight actions.
+      - Confirmation or dry-run for irreversible operations.
+      - An external enforcement boundary the agent cannot itself edit (guards
+        constraint self-modification).
+
+  - id: CTL-14
+    name: Release Artifact Attestation
+    stage: REL
+    objective: >-
+      Tamper-evident provenance is established and verified for the artifacts an
+      agent produces or consumes, so a substituted or backdoored artifact is
+      detectable.
+    requires:
+      - Signed build provenance for release artifacts (e.g. SLSA-style
+        attestations).
+      - Verification of upstream artifact, model, and dependency provenance
+        before promotion, rejecting unattested or provenance-mismatched
+        artifacts.
+      - Provenance records written to the audit trail (CTL-03).

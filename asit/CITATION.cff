@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use the Agentic SDLC Incident Taxonomy (ASIT), please cite it as below."
+title: "Agentic SDLC Incident Taxonomy (ASIT)"
+abstract: >-
+  A public, citable taxonomy of failure modes in which an autonomous or
+  semi-autonomous coding agent is the proximate cause of a software development
+  lifecycle defect, breach, outage, or governance failure. Each category is
+  testable, cross-referenced to a governance control map, and tagged as
+  documented (backed by a sourced public incident) or anticipated.
+type: dataset
+version: "0.2.0"
+date-released: "2026-07-24"
+license: MIT
+authors:
+  - given-names: Sushil
+    family-names: Dwivedi
+    # orcid: "https://orcid.org/0000-0000-0000-0000"   # optional: add your ORCID
+repository-code: "https://github.com/sushildwivedi-tech/ai-governance-toolkit"
+url: "https://github.com/sushildwivedi-tech/ai-governance-toolkit/tree/main/asit"
+# doi: "10.5281/zenodo.XXXXXXX"    # optional: mint a DOI (e.g. via Zenodo) and fill in
+keywords:
+  - AI agents
+  - agentic AI
+  - software development lifecycle
+  - AI governance
+  - taxonomy
+  - incident analysis
+  - AI security

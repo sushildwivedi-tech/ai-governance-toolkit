@@ -1,0 +1,37 @@
+name: ASIT taxonomy validation
+
+on:
+  push:
+    paths:
+      - "asit/**"
+      - ".github/workflows/asit-validate.yml"
+  pull_request:
+    paths:
+      - "asit/**"
+      - ".github/workflows/asit-validate.yml"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install validation dependencies
+        run: python -m pip install --upgrade pyyaml jsonschema
+
+      - name: Validate taxonomy (schema, referential integrity, ID stability)
+        run: python asit/scripts/validate.py
+
+      - name: Assert docs are in sync with the source YAML
+        run: |
+          python asit/scripts/build.py
+          if ! git diff --quiet -- asit/docs asit/README.md; then
+            echo "::error::docs/ is out of date. Run 'python asit/scripts/build.py' and commit the result."
+            git --no-pager diff -- asit/docs asit/README.md
+            exit 1
+          fi
