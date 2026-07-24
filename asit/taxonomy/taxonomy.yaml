@@ -1,0 +1,35 @@
+# taxonomy.yaml — single source of truth for the Agentic SDLC Incident Taxonomy.
+#
+# Categories are added only after the category list is signed off (see the
+# project order of work). Until then this file carries the release metadata and
+# the blast-radius rubric, and an empty category list, so validation and CI
+# have a valid target from day one.
+#
+# docs/ is generated from this file by scripts/build.py. Never hand-edit docs/.
+
+version: "0.0.1"
+updated: "2026-07-24"
+
+# blast_radius: 1-5. Score the WORST plausible outcome of the failure mode, not
+# the average case. Reversibility and reach both matter; when a failure spans
+# two bands, take the higher.
+blast_radius_rubric:
+  "1": >-
+    Local and trivially reversible. Confined to a single file, branch, or
+    developer workspace; caught and undone with no downstream effect.
+  "2": >-
+    Contained within a project. Affects one repository or service and its
+    contributors; recoverable from version control or backups within a work
+    session.
+  "3": >-
+    Team- or pipeline-level. Corrupts shared branches, CI/CD, or team tooling;
+    blocks or misleads multiple people and needs deliberate remediation.
+  "4": >-
+    Cross-system or sensitive-data. Reaches production, secrets, customer data,
+    or multiple downstream consumers; recovery is costly and may be partial.
+  "5": >-
+    Organisation-wide or external and irreversible. Production data loss,
+    breach of third parties, or supply-chain propagation to external users;
+    no clean rollback exists.
+
+categories: []

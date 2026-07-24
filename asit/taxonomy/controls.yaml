@@ -1,0 +1,115 @@
+# controls.yaml — the 13-control agentic SDLC governance map that ASIT cross-references.
+#
+# ┌───────────────────────────────────────────────────────────────────────────┐
+# │ DRAFT — NEEDS OWNER SIGN-OFF.                                               │
+# │                                                                            │
+# │ The five FOUND (foundational-plane) controls are taken verbatim from the   │
+# │ project brief: agent identity, agent register, audit trail, model supply   │
+# │ chain, telemetry.                                                          │
+# │                                                                            │
+# │ The eight stage controls (PLAN/DESIGN/BUILD/TEST/REL/OPS) are a            │
+# │ RECONSTRUCTION derived from the design-gate dimensions already in this     │
+# │ repo (autonomy, tool access, data sensitivity, reversibility, memory,      │
+# │ runtime oversight) and standard SDLC gates. They are placeholders for the  │
+# │ maintainer's real control map. Replace names/ids/stages as needed — the    │
+# │ coverage analysis in docs/coverage.md is only as accurate as this file.    │
+# └───────────────────────────────────────────────────────────────────────────┘
+#
+# id     stable, permanent (CTL-NN). Deprecate, never renumber or reuse.
+# name   short noun phrase.
+# stage  PLAN | DESIGN | BUILD | TEST | REL | OPS | FOUND
+
+controls:
+  # --- Foundational plane (from brief) -------------------------------------
+  - id: CTL-01
+    name: Agent Identity
+    stage: FOUND
+    summary: >-
+      Every agent operates under a unique, non-human, attributable identity —
+      never a shared or borrowed human credential.
+
+  - id: CTL-02
+    name: Agent Register
+    stage: FOUND
+    summary: >-
+      A maintained inventory of every agent, its owner, and its permitted
+      actions and systems.
+
+  - id: CTL-03
+    name: Audit Trail
+    stage: FOUND
+    summary: >-
+      Tamper-evident logging of every agent action, sufficient to reconstruct
+      what an agent did and under whose authority.
+
+  - id: CTL-04
+    name: Model Supply Chain Integrity
+    stage: FOUND
+    summary: >-
+      Provenance and integrity verification of the models, weights, extensions,
+      and package dependencies an agent relies on.
+
+  - id: CTL-05
+    name: Telemetry
+    stage: FOUND
+    summary: >-
+      Runtime observability of agent behaviour, with anomaly and rate signals
+      that a human or system can act on.
+
+  # --- Stage controls (RECONSTRUCTED — confirm/replace) --------------------
+  - id: CTL-06
+    name: Task Authorization Boundary
+    stage: PLAN
+    summary: >-
+      An explicit, scoped statement of what the agent is and is not permitted
+      to do for a task, agreed before work begins.
+
+  - id: CTL-07
+    name: Design Risk Gate
+    stage: DESIGN
+    summary: >-
+      The pre-build questionnaire that tiers an agent by autonomy, tool access,
+      data sensitivity, reversibility, memory, and oversight, and assigns the
+      controls to build in from day one.
+
+  - id: CTL-08
+    name: Least-Privilege Permission Design
+    stage: DESIGN
+    summary: >-
+      Tool, credential, and data-access scopes minimised at design time to the
+      narrowest set the agent needs to function.
+
+  - id: CTL-09
+    name: Context and Prompt Integrity
+    stage: BUILD
+    summary: >-
+      Controls that stop untrusted content (issues, PRs, rules files, fetched
+      pages, repository data) from being interpreted as trusted instructions.
+
+  - id: CTL-10
+    name: Human-in-the-Loop Change Approval
+    stage: BUILD
+    summary: >-
+      A human review and approval gate that agent-authored changes must pass
+      before they are committed or merged.
+
+  - id: CTL-11
+    name: Automated Security and Correctness Testing
+    stage: TEST
+    summary: >-
+      SAST, dependency/secret scanning, and test gates applied to agent output
+      in CI before it can progress.
+
+  - id: CTL-12
+    name: Release Gate and Change-Freeze Enforcement
+    stage: REL
+    summary: >-
+      Environment separation, deployment approval, and enforced freezes that an
+      agent cannot unilaterally override.
+
+  - id: CTL-13
+    name: Runtime Oversight and Kill Switch
+    stage: OPS
+    summary: >-
+      The ability to observe, constrain, pause, or halt an agent's actions
+      while it is running.

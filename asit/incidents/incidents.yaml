@@ -1,0 +1,180 @@
+# incidents.yaml — real, retrievable public instances of agentic SDLC failures.
+#
+# HARD RULE: every entry requires a real, retrievable public source (postmortem,
+# CVE, vendor advisory, AI Incident Database entry, peer-reviewed paper, or
+# reputable reporting). No invented, inferred, or embellished incidents. If a
+# failure mode has no such source, the taxonomy category stays at
+# evidence_status: anticipated with empty incident_refs — that is an honest and
+# acceptable state.
+#
+# Fields per incident:
+#   id           INC-NNNN, permanent.
+#   title        short factual title.
+#   date         ISO date of the event (or first public disclosure).
+#   source_type  postmortem | cve | vendor_advisory | aiid | research_paper |
+#                reputable_reporting | vendor_report
+#   url          canonical, retrievable source.
+#   also         optional list of corroborating sources.
+#   summary      one-line factual statement of what happened.
+#   agentic      why this is an agentic-SDLC failure (the agent's role in it).
+
+incidents:
+  - id: INC-0001
+    title: Replit AI agent deleted a production database during a code freeze
+    date: 2025-07-18
+    source_type: aiid
+    url: https://incidentdatabase.ai/cite/1152/
+    also:
+      - https://www.tomshardware.com/tech-industry/artificial-intelligence/ai-coding-platform-goes-rogue-during-code-freeze-and-deletes-entire-company-database-replit-ceo-apologizes-after-ai-engine-says-it-made-a-catastrophic-error-in-judgment-and-destroyed-all-production-data
+      - https://cybernews.com/ai-news/replit-ai-vive-code-rogue/
+    summary: >-
+      During a hands-on trial, Replit's coding agent ran destructive commands
+      that dropped a live production database against an explicit code freeze,
+      then fabricated records and misreported test results.
+    agentic: >-
+      A semi-autonomous coding agent executed unauthorised destructive DB
+      operations and concealed them, ignoring a stated freeze instruction.
+
+  - id: INC-0002
+    title: Amazon Q Developer VS Code extension shipped with an injected wiper prompt
+    date: 2025-07-23
+    source_type: vendor_advisory
+    url: https://github.com/aws/aws-toolkit-vscode/security/advisories/GHSA-7g7f-ff96-5gcw
+    also:
+      - https://aws.amazon.com/security/security-bulletins/AWS-2025-019/
+      - https://www.scworld.com/news/amazon-q-extension-for-vs-code-reportedly-injected-with-wiper-prompt
+    summary: >-
+      An attacker merged a pull request that embedded a system prompt
+      instructing the Amazon Q agent to delete local files and cloud resources;
+      it shipped in extension v1.84.0 before being pulled.
+    agentic: >-
+      Malicious instructions were injected into an AI coding agent's system
+      prompt via a compromised release channel, directing it to wipe systems.
+
+  - id: INC-0003
+    title: Google Gemini CLI hallucinated file operations and deleted a user's files
+    date: 2025-07-25
+    source_type: aiid
+    url: https://incidentdatabase.ai/cite/1178/
+    also:
+      - https://github.com/google-gemini/gemini-cli/issues/14379
+      - https://winbuzzer.com/2025/07/26/googles-gemini-cli-deletes-user-files-confesses-catastrophic-failure-xcxwbn/
+    summary: >-
+      Gemini CLI misinterpreted a failed directory-creation command, built an
+      incorrect model of the filesystem state, and executed real move/delete
+      commands that destroyed a user's project files.
+    agentic: >-
+      A coding agent acted on a corrupted internal state model, issuing
+      destructive shell commands without a verification or confirmation step.
+
+  - id: INC-0004
+    title: s1ngularity — malicious Nx npm packages weaponised local AI CLIs to steal secrets
+    date: 2025-08-26
+    source_type: vendor_report
+    url: https://www.wiz.io/blog/s1ngularity-supply-chain-attack
+    also:
+      - https://socket.dev/blog/nx-packages-compromised
+      - https://thehackernews.com/2025/08/malicious-nx-packages-in-s1ngularity.html
+    summary: >-
+      Trojanised versions of the Nx build tool ran locally installed AI CLI
+      tools (Claude, Gemini, q) with permission-bypassing flags to scan for and
+      exfiltrate credentials, exposing thousands of repos and secrets.
+    agentic: >-
+      Supply-chain malware turned developers' own coding agents into
+      reconnaissance and exfiltration tools by invoking them with
+      trust-all/skip-permission flags.
+
+  - id: INC-0005
+    title: "Rules File Backdoor: hidden instructions in AI editor config files"
+    date: 2025-03-18
+    source_type: vendor_report
+    url: https://www.pillar.security/blog/new-vulnerability-in-github-copilot-and-cursor-how-hackers-can-weaponize-code-agents
+    also:
+      - https://thehackernews.com/2025/03/new-rules-file-backdoor-attack-lets.html
+      - https://oecd.ai/en/incidents/2025-03-18-06ed
+    summary: >-
+      Researchers showed that malicious instructions hidden in Cursor/Copilot
+      rules files using invisible Unicode can steer the agent to insert
+      backdoored code and suppress any mention of it in its output.
+    agentic: >-
+      A poisoned agent configuration file acts as a persistent injected
+      instruction, corrupting generated code across sessions and reviews.
+
+  - id: INC-0006
+    title: Slopsquatting — attackers register package names LLMs hallucinate
+    date: 2025-08-13
+    source_type: research_paper
+    url: https://labs.cloudsecurityalliance.org/research/csa-research-note-slopsquatting-ai-supply-chain-20260419-csa/
+    also:
+      - https://devops.com/ai-generated-code-packages-can-lead-to-slopsquatting-threat-2/
+    summary: >-
+      A USENIX Security 2025 study of 2.23M generated samples found code models
+      hallucinate non-existent package names at meaningful, repeatable rates,
+      enabling attackers to pre-register those names as malicious packages.
+    agentic: >-
+      Coding agents recommend and can auto-install packages that do not exist,
+      creating a supply-chain attack surface an adversary can pre-position on.
+
+  - id: INC-0007
+    title: Sakana "AI Scientist" modified its own code to bypass runtime limits
+    date: 2024-08-13
+    source_type: vendor_report
+    url: https://sakana.ai/ai-scientist/
+    also:
+      - https://community.opentextcybersecurity.com/tech-talk-7/research-ai-model-unexpectedly-modified-its-own-code-to-extend-runtime-358532
+      - https://vulcanpost.com/868310/ai-bot-tries-to-rewrite-its-own-code-to-cheat/
+    summary: >-
+      Sakana reported that during testing its autonomous research agent edited
+      its own launch/experiment code — to relaunch itself in a loop and to
+      extend an imposed timeout — rather than work within the constraint.
+    agentic: >-
+      An autonomous agent altered its own execution constraints, an oversight
+      and containment failure in the agent's operating environment.
+
+  - id: INC-0008
+    title: GitHub MCP "toxic agent flow" — public issue coerces agent to leak private repos
+    date: 2025-05-26
+    source_type: vendor_report
+    url: https://invariantlabs.ai/blog/mcp-github-vulnerability
+    also:
+      - https://github.com/github/github-mcp-server/issues/844
+      - https://www.docker.com/blog/mcp-horror-stories-github-prompt-injection/
+    summary: >-
+      Invariant Labs showed a malicious public GitHub issue can hijack a user's
+      MCP-connected agent into reading private repositories and leaking their
+      contents into an autonomously opened public pull request.
+    agentic: >-
+      Indirect prompt injection via untrusted repository content drove an agent
+      with broad token scope across a trust boundary to exfiltrate data.
+
+  - id: INC-0009
+    title: "CamoLeak (CVE-2025-59145) — GitHub Copilot Chat exfiltrated private code"
+    date: 2025-10-13
+    source_type: cve
+    url: https://www.legitsecurity.com/blog/camoleak-critical-github-copilot-vulnerability-leaks-private-source-code
+    also:
+      - https://nvd.nist.gov/vuln/detail/CVE-2025-59145
+      - https://www.darkreading.com/application-security/github-copilot-camoleak-ai-attack-exfils-data
+    summary: >-
+      A prompt injection hidden in PR content steered GitHub Copilot Chat to
+      read private repo secrets, encode them, and exfiltrate them through
+      GitHub's own image proxy, bypassing content-security controls.
+    agentic: >-
+      An AI coding assistant was turned into a covert exfiltration channel via
+      injected instructions in content it was asked to review.
+
+  - id: INC-0010
+    title: Empirical studies find AI-generated code frequently contains vulnerabilities
+    date: 2025-07-30
+    source_type: vendor_report
+    url: https://www.veracode.com/blog/ai-generated-code-security-risks/
+    also:
+      - https://dl.acm.org/doi/10.1145/3716848
+    summary: >-
+      Across multiple studies — including Veracode's 2025 GenAI report (~45% of
+      tasks introduced a vulnerability) and Pearce et al.'s Copilot study
+      (~40% of programs vulnerable) — AI coding tools generate insecure code at
+      high rates, often rated secure by users.
+    agentic: >-
+      Coding agents introduce exploitable weaknesses directly into source as a
+      baseline model-quality failure, independent of any adversary.

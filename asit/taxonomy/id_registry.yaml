@@ -1,0 +1,14 @@
+# id_registry.yaml — the permanent record of every ASIT id ever assigned.
+#
+# ASIT ids are permanent. This file is the ledger validate.py checks category
+# ids against so that ids are never silently renumbered, removed, or reused:
+#
+#   * Every id in taxonomy.yaml must appear here (add new ones with
+#     `python scripts/validate.py --register-new-ids`, which is a deliberate,
+#     reviewable act — never an accident).
+#   * Every id here must still appear in taxonomy.yaml. To retire a category,
+#     set its status to `deprecated` in taxonomy.yaml; do not delete it.
+#
+# Do not hand-remove entries. Deprecation is the only exit.
+
+ids: []
