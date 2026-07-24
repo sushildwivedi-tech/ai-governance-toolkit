@@ -23,7 +23,7 @@ removed.
 
 ### Added
 - Initial taxonomy of 17 categories across the seven stages
-  (PLAN, DESIGN, BUILD, TEST, REL, OPS, FOUND): 12 `documented`, 5 `anticipated`.
+  (PLAN, DESIGN, BUILD, TEST, REL, OPS, FOUND): 13 `documented`, 4 `anticipated`.
 - `taxonomy/schema.json` — JSON Schema (Draft 2020-12) for `taxonomy.yaml`.
 - `taxonomy/taxonomy.yaml` — single source of truth, with an explicit 1–5
   blast-radius rubric.
