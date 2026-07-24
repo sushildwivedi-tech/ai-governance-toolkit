@@ -11,16 +11,13 @@ type: dataset
 version: "0.1.0"
 date-released: "2026-07-24"
 license: MIT
-# --- FILL IN ---------------------------------------------------------------
-# Replace the placeholder author and repository/DOI details below.
 authors:
-  - given-names: FIRST_NAME       # TODO: fill in
-    family-names: LAST_NAME       # TODO: fill in
-    # orcid: "https://orcid.org/0000-0000-0000-0000"   # TODO (optional)
+  - given-names: Sushil
+    family-names: Dwivedi
+    # orcid: "https://orcid.org/0000-0000-0000-0000"   # optional: add your ORCID
 repository-code: "https://github.com/sushildwivedi-tech/ai-governance-toolkit"
 url: "https://github.com/sushildwivedi-tech/ai-governance-toolkit/tree/main/asit"
-# doi: "10.5281/zenodo.XXXXXXX"    # TODO: mint a DOI (e.g. via Zenodo) and fill in
-# ---------------------------------------------------------------------------
+# doi: "10.5281/zenodo.XXXXXXX"    # optional: mint a DOI (e.g. via Zenodo) and fill in
 keywords:
   - AI agents
   - agentic AI
