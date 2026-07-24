@@ -2,31 +2,31 @@
 
 # ASIT — Control Coverage
 
-Version 0.1.0 · 2026-07-24
+Version 0.2.0 · 2026-07-24
 
-Maps the 13-control governance map onto the taxonomy. Two kinds of gap are surfaced, not hidden: **controls that mitigate no category** (possibly redundant, or mis-scoped) and **categories that lean on a single control** (thin, brittle coverage).
+Maps the 14-control governance map onto the taxonomy. Two kinds of gap are surfaced, not hidden: **controls that mitigate no category** (possibly redundant, or mis-scoped) and **categories that lean on a single control** (thin, brittle coverage).
 
 ## Matrix
 
-| Category \ Control | CTL-01 | CTL-02 | CTL-03 | CTL-04 | CTL-05 | CTL-06 | CTL-07 | CTL-08 | CTL-09 | CTL-10 | CTL-11 | CTL-12 | CTL-13 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| ASIT-PLAN-01 |  |  |  |  |  | ● |  |  |  |  |  |  |  |
-| ASIT-DESIGN-01 |  |  |  |  |  |  | ● |  |  |  |  |  | ● |
-| ASIT-DESIGN-02 |  |  |  |  |  |  |  | ● |  |  |  |  |  |
-| ASIT-BUILD-01 |  |  |  |  |  |  |  |  |  | ● | ● |  |  |
-| ASIT-BUILD-02 |  |  |  | ● |  |  |  |  |  |  | ● |  |  |
-| ASIT-BUILD-03 |  |  |  |  |  |  |  | ● | ● |  |  |  |  |
-| ASIT-BUILD-04 |  |  |  | ● |  |  |  |  | ● |  |  |  |  |
-| ASIT-BUILD-05 |  |  |  |  |  |  |  |  |  | ● |  |  |  |
-| ASIT-TEST-01 |  |  | ● |  |  |  |  |  |  | ● | ● |  |  |
-| ASIT-REL-01 |  |  |  |  |  |  |  |  |  |  |  | ● |  |
-| ASIT-REL-02 |  |  |  | ● |  |  |  |  |  |  |  | ● |  |
-| ASIT-OPS-01 |  |  |  |  |  | ● |  | ● |  |  |  |  | ● |
-| ASIT-OPS-02 |  |  |  |  | ● |  |  |  |  |  |  |  | ● |
-| ASIT-OPS-03 |  |  | ● |  | ● |  |  |  |  |  |  |  | ● |
-| ASIT-OPS-04 |  |  |  | ● | ● |  |  | ● |  |  |  |  |  |
-| ASIT-FOUND-01 | ● | ● | ● |  |  |  |  |  |  |  |  |  |  |
-| ASIT-FOUND-02 |  |  |  | ● |  |  |  |  |  |  |  |  |  |
+| Category \ Control | CTL-01 | CTL-02 | CTL-03 | CTL-04 | CTL-05 | CTL-06 | CTL-07 | CTL-08 | CTL-09 | CTL-10 | CTL-11 | CTL-12 | CTL-13 | CTL-14 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| ASIT-PLAN-01 |  |  |  |  |  | ● |  |  |  |  |  |  |  |  |
+| ASIT-DESIGN-01 |  |  |  |  |  |  | ● |  |  |  |  |  | ● |  |
+| ASIT-DESIGN-02 |  |  |  |  |  |  |  | ● |  |  |  |  |  |  |
+| ASIT-BUILD-01 |  |  |  |  |  |  |  |  |  | ● | ● |  |  |  |
+| ASIT-BUILD-02 |  |  |  | ● |  |  |  |  |  |  | ● |  |  | ● |
+| ASIT-BUILD-03 |  |  |  |  |  |  |  | ● | ● |  |  |  |  |  |
+| ASIT-BUILD-04 |  |  |  | ● |  |  |  |  | ● |  |  |  |  |  |
+| ASIT-BUILD-05 |  |  |  |  |  |  |  |  |  | ● |  |  |  |  |
+| ASIT-TEST-01 |  |  | ● |  |  |  |  |  |  | ● | ● |  |  |  |
+| ASIT-REL-01 |  |  |  |  |  |  |  |  |  |  |  | ● |  |  |
+| ASIT-REL-02 |  |  |  | ● |  |  |  |  |  |  |  | ● |  | ● |
+| ASIT-OPS-01 |  |  |  |  |  | ● |  | ● |  |  |  |  | ● |  |
+| ASIT-OPS-02 |  |  |  |  | ● |  |  |  |  |  |  |  | ● |  |
+| ASIT-OPS-03 |  |  | ● |  | ● |  |  |  |  |  |  |  | ● |  |
+| ASIT-OPS-04 |  |  |  | ● | ● |  |  | ● |  |  |  |  |  |  |
+| ASIT-FOUND-01 | ● | ● | ● |  |  |  |  |  |  |  |  |  |  |  |
+| ASIT-FOUND-02 |  |  |  | ● |  |  |  |  |  |  |  |  |  | ● |
 
 ## Controls and what they cover
 
@@ -45,6 +45,7 @@ Maps the 13-control governance map onto the taxonomy. Two kinds of gap are surfa
 | CTL-11 | TEST | Automated Security and Correctness Testing | ASIT-BUILD-01, ASIT-BUILD-02, ASIT-TEST-01 |
 | CTL-12 | REL | Release Gate and Change-Freeze Enforcement | ASIT-REL-01, ASIT-REL-02 |
 | CTL-13 | OPS | Runtime Oversight and Kill Switch | ASIT-DESIGN-01, ASIT-OPS-01, ASIT-OPS-02, ASIT-OPS-03 |
+| CTL-14 | REL | Release Artifact Attestation | ASIT-BUILD-02, ASIT-REL-02, ASIT-FOUND-02 |
 
 ## Gaps
 
@@ -57,4 +58,3 @@ Every category maps to at least one control.
 - ASIT-DESIGN-02 (Overbroad Permission or Tool Grant) → CTL-08
 - ASIT-BUILD-05 (Unrequested Scope Expansion) → CTL-10
 - ASIT-REL-01 (Change-Freeze or Approval-Gate Violation) → CTL-12
-- ASIT-FOUND-02 (Model or Weight Supply-Chain Compromise) → CTL-04

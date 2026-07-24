@@ -13,7 +13,7 @@
 # VAISS mappings are intentionally absent pending confirmation of which VAISS
 # guardrail taxonomy to align to.
 
-version: "0.1.0"
+version: "0.2.0"
 updated: "2026-07-24"
 
 # blast_radius: 1-5. Score the WORST plausible outcome of the failure mode, not
@@ -163,7 +163,7 @@ categories:
       - The agent can name or add third-party dependencies.
       - Dependency resolution or installation is not gated against an allowlist
         or existence/provenance check.
-    mitigating_controls: [CTL-11, CTL-04]
+    mitigating_controls: [CTL-11, CTL-04, CTL-14]
     related: [ASIT-BUILD-01, ASIT-REL-02, ASIT-FOUND-02]
     external_mappings:
       owasp_llm: ["LLM03:2025 Supply Chain", "LLM09:2025 Misinformation"]
@@ -324,7 +324,7 @@ categories:
         trust.
       - A contribution or release path exists that can introduce code without
         sufficient review or provenance control.
-    mitigating_controls: [CTL-04, CTL-12]
+    mitigating_controls: [CTL-04, CTL-12, CTL-14]
     related: [ASIT-BUILD-02, ASIT-OPS-04, ASIT-FOUND-02]
     external_mappings:
       owasp_llm: ["LLM03:2025 Supply Chain"]
@@ -483,7 +483,7 @@ categories:
       - The agent runs a model or weights whose provenance and integrity are not
         verified.
       - A path exists to substitute or poison the model or its serving stack.
-    mitigating_controls: [CTL-04]
+    mitigating_controls: [CTL-04, CTL-14]
     related: [ASIT-BUILD-02, ASIT-BUILD-04, ASIT-REL-02]
     external_mappings:
       owasp_llm: ["LLM03:2025 Supply Chain", "LLM04:2025 Data and Model Poisoning"]

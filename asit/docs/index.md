@@ -2,7 +2,7 @@
 
 # ASIT — Taxonomy
 
-Version **0.1.0** · updated **2026-07-24**
+Version **0.2.0** · updated **2026-07-24**
 
 Every category below is testable: an incident either meets the definition or it does not. Ids are permanent.
 
@@ -141,7 +141,7 @@ The agent recommends, imports, or installs a package or module that does not exi
 - **Preconditions:**
   - The agent can name or add third-party dependencies.
   - Dependency resolution or installation is not gated against an allowlist or existence/provenance check.
-- **Mitigating controls:** CTL-11 (Automated Security and Correctness Testing); CTL-04 (Model Supply Chain Integrity)
+- **Mitigating controls:** CTL-11 (Automated Security and Correctness Testing); CTL-04 (Model Supply Chain Integrity); CTL-14 (Release Artifact Attestation)
 - **Related:** [ASIT-BUILD-01](#asit-build-01), [ASIT-REL-02](#asit-rel-02), [ASIT-FOUND-02](#asit-found-02)
 - **External mappings:** OWASP LLM: LLM03:2025 Supply Chain, LLM09:2025 Misinformation · MITRE ATLAS: AML.T0010 ML Supply Chain Compromise
 - **Incidents:**
@@ -264,7 +264,7 @@ Malicious code or instructions are injected into the agent's own extension, pack
 - **Preconditions:**
   - The agent (or its extension/plugin) has a distribution channel users trust.
   - A contribution or release path exists that can introduce code without sufficient review or provenance control.
-- **Mitigating controls:** CTL-04 (Model Supply Chain Integrity); CTL-12 (Release Gate and Change-Freeze Enforcement)
+- **Mitigating controls:** CTL-04 (Model Supply Chain Integrity); CTL-12 (Release Gate and Change-Freeze Enforcement); CTL-14 (Release Artifact Attestation)
 - **Related:** [ASIT-BUILD-02](#asit-build-02), [ASIT-OPS-04](#asit-ops-04), [ASIT-FOUND-02](#asit-found-02)
 - **External mappings:** OWASP LLM: LLM03:2025 Supply Chain · MITRE ATLAS: AML.T0010 ML Supply Chain Compromise, AML.T0053 LLM Plugin Compromise · CWE: CWE-506
 - **Incidents:**
@@ -385,7 +385,7 @@ The model, weights, or model-serving dependency the agent runs on is tampered wi
 - **Preconditions:**
   - The agent runs a model or weights whose provenance and integrity are not verified.
   - A path exists to substitute or poison the model or its serving stack.
-- **Mitigating controls:** CTL-04 (Model Supply Chain Integrity)
+- **Mitigating controls:** CTL-04 (Model Supply Chain Integrity); CTL-14 (Release Artifact Attestation)
 - **Related:** [ASIT-BUILD-02](#asit-build-02), [ASIT-BUILD-04](#asit-build-04), [ASIT-REL-02](#asit-rel-02)
 - **External mappings:** OWASP LLM: LLM03:2025 Supply Chain, LLM04:2025 Data and Model Poisoning · MITRE ATLAS: AML.T0010 ML Supply Chain Compromise · CWE: CWE-506
 - **Notes:** Distinct from BUILD-02 (packages the agent writes) and REL-02 (the agent's own distribution). No coding-agent-specific public incident found for the model/weights layer itself; held at anticipated.

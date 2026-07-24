@@ -7,6 +7,18 @@ and the taxonomy version tracks `taxonomy/taxonomy.yaml`.
 Ids are permanent: categories are added or deprecated, never renumbered or
 removed.
 
+## [0.2.0] — 2026-07-24
+
+### Changed
+- Confirmed the eight stage controls (CTL-06…13) and fleshed them out with
+  `objective` and `requires` fields in `controls.yaml`.
+
+### Added
+- `CTL-14` Release Artifact Attestation (REL) — SLSA-style provenance for
+  artifacts an agent produces or consumes. Wired into `ASIT-BUILD-02`,
+  `ASIT-REL-02`, and `ASIT-FOUND-02`, relieving those categories' reliance on
+  `CTL-04` alone.
+
 ## [0.1.0] — 2026-07-24
 
 ### Added
@@ -27,7 +39,5 @@ removed.
 - `CONTRIBUTING.md`, `CITATION.cff` (placeholder author/DOI), and this changelog.
 
 ### Known limitations
-- The eight stage controls (CTL-06…13) await maintainer confirmation; the
-  coverage analysis depends on them.
 - `external_mappings.vaiss` is intentionally unpopulated pending confirmation of
   the target VAISS guardrail taxonomy.

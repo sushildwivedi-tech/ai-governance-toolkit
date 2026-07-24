@@ -42,7 +42,7 @@ asit/
   taxonomy/
     taxonomy.yaml      # single source of truth (categories)
     schema.json        # JSON Schema for taxonomy.yaml
-    controls.yaml      # the 13-control governance map ASIT cross-references
+    controls.yaml      # the governance control map ASIT cross-references
     id_registry.yaml   # permanent ledger of assigned ids (stability check)
   incidents/
     incidents.yaml     # sourced real-world instances
@@ -113,12 +113,12 @@ and these are the only places to read the taxonomy as prose (never hand-edit):
 
 ## Status
 
-Version 0.1.0 — 17 categories across the seven stages, of which 12 are
-`documented` against sourced incidents and 5 are `anticipated`. Contributions
-follow [`CONTRIBUTING.md`](CONTRIBUTING.md); cite via
-[`CITATION.cff`](CITATION.cff).
+Version 0.2.0 — 17 categories across the seven stages, of which 12 are
+`documented` against sourced incidents and 5 are `anticipated`, cross-referenced
+to a 14-control governance map. Contributions follow
+[`CONTRIBUTING.md`](CONTRIBUTING.md); cite via [`CITATION.cff`](CITATION.cff).
 
 > Note on the control map: the five foundational controls come from the
-> maintainer's brief; the eight stage controls in `controls.yaml` are a draft
-> reconstruction pending confirmation. The coverage analysis is only as
-> accurate as that file.
+> maintainer's brief; the nine stage controls (CTL-06…14) in `controls.yaml`
+> are maintainer-confirmed. `external_mappings.vaiss` is left unpopulated
+> pending confirmation of the target taxonomy.

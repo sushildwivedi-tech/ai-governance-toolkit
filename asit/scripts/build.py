@@ -219,8 +219,9 @@ def build_coverage(tax, controls) -> str:
     out = [GENERATED_BANNER, "# ASIT — Control Coverage\n"]
     out.append(f"Version {tax['version']} · {tax['updated']}\n")
     out.append(
-        "Maps the 13-control governance map onto the taxonomy. Two kinds of gap "
-        "are surfaced, not hidden: **controls that mitigate no category** "
+        f"Maps the {len(controls_sorted)}-control governance map onto the "
+        "taxonomy. Two kinds of gap are surfaced, not hidden: "
+        "**controls that mitigate no category** "
         "(possibly redundant, or mis-scoped) and **categories that lean on a "
         "single control** (thin, brittle coverage).\n"
     )
